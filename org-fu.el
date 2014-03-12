@@ -96,19 +96,18 @@
       ((file-name (org-trim
                    (shell-command-to-string
                     (concat
-                     "youtube-dl "
+                     "youtube-dl \""
                      link
+                     "\""
                      " -o \"%(title)s.%(ext)s\" --get-filename"))))
        (dir "~/Downloads/Videos")
        (full-name
         (expand-file-name file-name dir)))
-    (add-hook 'org-link-hook (lambda ()
-                               (concat
-                                (org-make-link-string dir dir)
-                                "\n"
-                                (org-make-link-string full-name file-name))))
+    (add-hook 'org-link-hook (lambda () (format "[[%s][%s]]\n[[%s][%s]]"
+                                           dir dir
+                                           full-name file-name)))
     (async-shell-command
-     (format "youtube-dl %s -o \"%s\"" link full-name))
+     (format "youtube-dl \"%s\" -o \"%s\"" link full-name))
     (find-file (org-expand "ent.org"))
     (goto-char (point-min))
     (re-search-forward "^\\*+ +Videos" nil t)))
