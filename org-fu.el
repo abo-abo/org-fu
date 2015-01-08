@@ -117,9 +117,12 @@ Try to remove superfluous information, like website title."
        (dir "~/Downloads/Videos")
        (full-name
         (expand-file-name file-name dir)))
-    (add-hook 'org-link-hook (lambda () (format "[[%s][%s]]\n[[%s][%s]]"
-                                           dir dir
-                                           full-name file-name)))
+    (add-hook 'org-link-hook
+              (lambda ()
+                (concat
+                 (org-make-link-string dir dir)
+                 "\n"
+                 (org-make-link-string full-name file-name))))
     (async-shell-command
      (format "youtube-dl \"%s\" -o \"%s\"" link full-name))
     (find-file (org-expand "ent.org"))
