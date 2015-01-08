@@ -73,10 +73,13 @@
       org-capture-templates)
 
 (defun org-wash-link ()
+  "Return a pretty-printed top of `org-stored-links'.
+Try to remove superfluous information, like website title."
   (let ((link (caar org-stored-links))
         (title (cadar org-stored-links)))
-    (setq title (replace-regexp-in-string " - Stack Overflow" "" title))
-    (org-make-link-string link title)))
+    (org-make-link-string
+     link
+     (replace-regexp-in-string " - Stack Overflow" "" title))))
 
 (defvar org-link-hook nil)
 
