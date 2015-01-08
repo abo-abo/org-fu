@@ -1,5 +1,3 @@
-;; ——— base directory ——————————————————————————————————————————————————————————
-(defvar org.d "~/Dropbox/org")
 ;; Expected files:
 ;; * gtd.org with level 1: Tasks, Projects
 ;;
@@ -9,25 +7,26 @@
 ;; * ent.org with level 1: Articles, Videos
 ;; * wiki/stack.org with level 1: Questions
 
-;; ——— basics ——————————————————————————————————————————————————————————————————
+;;* base directory
+(defvar org.d "~/Dropbox/org")
+
 (defun org-expand (name)
   (expand-file-name name org.d))
 
-;; ——— capture: basic ——————————————————————————————————————————————————————————
+;;* capture
+;;** tasks
 (require 'org-capture)
 (setq
  org-capture-templates
  '(("t" "TODO" entry (file+headline (org-expand "gtd.org") "Tasks")
     "* TODO %^{Brief Description} %^g     \nAdded: %U  %i\n  %?\n"
     :clock-in t :clock-resume t)))
-
-;; ——— capture: project ————————————————————————————————————————————————————————
+;;** projects
 (defvar org-project-list
   '(("ELISP" "e" "elisp")
     ("FARGS" "f" "function-args")
-    ("TINY" "y" "tiny.el")
-    ("ELTEX" "a" "el-TeX")
-    ("WORF" "w" "Worf"))
+    ("WORF" "w" "worf")
+    ("LISPY" "y" "lispy"))
   "List of projects in gtd.org in '(tag key description) format.")
 
 (mapc
@@ -41,8 +40,7 @@
                tag)
              :clock-in t :clock-resume t))))
  org-project-list)
-
-;; ——— capture: pdf ————————————————————————————————————————————————————————————
+;;** PDF
 (push
  '("p" "Pdf article" entry (file+olp (org-expand "gtd.org") "Projects" "Scientific Articles")
    "* TODO Read %(org-process-current-pdf)%(org-set-tags-to\"OFFICE\")\nAdded: %U %i\n  %?\n")
@@ -67,15 +65,28 @@
                     (match-string 2 name)
                     (match-string 1 name))
           name)))))
-
-;; ——— protocol ————————————————————————————————————————————————————————————————
+;;* protocol
 (require 'org-protocol)
 (setq org-protocol-default-template-key "l")
 (push '("l" "Link" entry (function org-handle-link)
         "* TODO %(org-wash-link)\nAdded: %U\n%(org-link-hooks)\n%?")
       org-capture-templates)
 
-;; ——— capture: link ———————————————————————————————————————————————————————————
+(defun org-wash-link ()
+  (let ((link (caar org-stored-links))
+        (title (cadar org-stored-links)))
+    (setq title (replace-regexp-in-string " - Stack Overflow" "" title))
+    (org-make-link-string link title)))
+
+(defvar org-link-hook nil)
+
+(defun org-link-hooks ()
+  (prog1
+      (mapconcat #'funcall
+                 org-link-hook
+                 "\n")
+    (setq org-link-hook)))
+
 (defun org-handle-link ()
   (let ((link (caar org-stored-links))
         file)
@@ -112,25 +123,10 @@
     (goto-char (point-min))
     (re-search-forward "^\\*+ +Videos" nil t)))
 
-(defvar org-link-hook nil)
-
-(defun org-link-hooks ()
-  (prog1
-      (mapconcat #'funcall
-                 org-link-hook
-                 "\n")
-    (setq org-link-hook)))
-
-(defun org-wash-link ()
-  (let ((link (caar org-stored-links))
-        (title (cadar org-stored-links)))
-    (setq title (replace-regexp-in-string " - Stack Overflow" "" title))
-    (org-make-link-string link title)))
-
 (provide 'org-fu)
 
 ;;; Local Variables:
-;;; outline-regexp: ";; ———"
+;;; outline-regexp: ";;\\*+"
 ;;; End:
 
 ;;; org-fu.el ends here
