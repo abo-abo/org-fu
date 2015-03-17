@@ -90,7 +90,15 @@ Try to remove superfluous information, like website title."
                  "\n")
     (setq org-link-hook)))
 
+(defun wmctrl-raise-frame ()
+  (if (eq system-type 'gnu/linux)
+      (call-process
+       "wmctrl" nil nil nil "-i" "-R"
+       (frame-parameter (selected-frame) 'outer-window-id))
+    (raise-frame)))
+
 (defun org-handle-link ()
+  (wmctrl-raise-frame)
   (let ((link (caar org-stored-links))
         file)
     (cond ((string-match "^https://www.youtube.com/" link)
