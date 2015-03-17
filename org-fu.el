@@ -8,20 +8,20 @@
 ;; * wiki/stack.org with level 1: Questions
 
 ;;* base directory
-(defvar org.d "~/Dropbox/org")
-
 (defun org-expand (name)
-  (expand-file-name name org.d))
+  (expand-file-name name "~/Dropbox/org"))
 
 ;;* capture
-;;** tasks
+;;** basic
+;; http://orgmode.org/manual/Capture-templates.html#Capture-templates
 (require 'org-capture)
 (setq
  org-capture-templates
  '(("t" "TODO" entry (file+headline (org-expand "gtd.org") "Tasks")
-    "* TODO %^{Brief Description} %^g     \nAdded: %U  %i\n  %?\n"
-    :clock-in t :clock-resume t)))
-;;** projects
+    "* TODO %^{Brief Description}\nAdded: %U\n%?\n")
+   ("b" "Buffer" entry (file+headline (org-expand "gtd.org") "Tasks")
+    "* TODO %a")))
+;;** project
 (defvar org-project-list
   '(("ELISP" "e" "elisp")
     ("FARGS" "f" "function-args")
@@ -65,7 +65,7 @@
                     (match-string 2 name)
                     (match-string 1 name))
           name)))))
-;;* protocol
+;;** protocol
 (require 'org-protocol)
 (setq org-protocol-default-template-key "l")
 (push '("l" "Link" entry (function org-handle-link)
@@ -130,9 +130,5 @@ Try to remove superfluous information, like website title."
     (re-search-forward "^\\*+ +Videos" nil t)))
 
 (provide 'org-fu)
-
-;;; Local Variables:
-;;; outline-regexp: ";;\\*+"
-;;; End:
 
 ;;; org-fu.el ends here
