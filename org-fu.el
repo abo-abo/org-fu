@@ -11,6 +11,11 @@
 (defun org-expand (name)
   (expand-file-name name "~/Dropbox/org"))
 
+(defcustom org-fu-github-project-name
+  "https://github\\.com/abo-abo/\\([^/]+\\)"
+  "Regex for Github repository projects."
+  :type 'string)
+
 ;;* capture
 ;;** basic
 ;; http://orgmode.org/manual/Capture-templates.html#Capture-templates
@@ -107,6 +112,10 @@ Try to remove superfluous information, like website title."
            (find-file (org-expand "wiki/stack.org"))
            (goto-char (point-min))
            (re-search-forward "^\\*+ +Questions" nil t))
+          ((string-match org-fu-github-project-name link)
+           (find-file (org-expand (format "wiki/%s.org" (match-string 1 link))))
+           (goto-char (point-min))
+           (re-search-forward "^\\*+ +Issues" nil t))
           (t
            (find-file (org-expand "ent.org"))
            (goto-char (point-min))
