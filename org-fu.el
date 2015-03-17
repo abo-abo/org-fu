@@ -145,6 +145,56 @@ Try to remove superfluous information, like website title."
     (goto-char (point-min))
     (re-search-forward "^\\*+ +Videos" nil t)))
 
+;;** agenda
+(defun orfu-tags-projects ()
+  (mapcar (lambda(x) `(tags-todo ,(car x)))
+          orfu-project-list))
+
+(setq org-agenda-custom-commands
+      `(("n" "Agenda and all TODO's" ((agenda "") (alltodo "")))
+        ("h" "Office and Outside and Home"
+             ((agenda)
+              (tags-todo "OFFICE")
+              (tags-todo "OUTSIDE")
+              ,@(orfu-tags-projects)
+              (tags-todo "HOME")))
+        ("r" "Articles"
+             ((tags-todo "article")
+              (tags-todo "MASTERINGEMACS")))
+        ("o" "Office and Outside"
+             ((agenda)
+              (tags-todo "OFFICE")
+              (tags-todo "OUTSIDE")
+              ,@(orfu-tags-projects)))
+        ("d" "Daily Action List"
+             ((agenda ""
+                      ((org-agenda-ndays 1)
+                       (org-agenda-sorting-strategy
+                        (quote ((agenda time-up priority-down tag-up))))
+                       (org-deadline-warning-days 0)))))
+        ("P" "Project List"
+             ((tags "PROJECT")))))
+
+;;;###autoload
+(defun orfu-agenda-quick ()
+  (interactive)
+  (org-agenda nil "h"))
+
+;;;###autoload
+(defun orfu-agenda-office ()
+  (interactive)
+  (org-agenda nil "o"))
+
+;;;###autoload
+(defun orfu-agenda-day ()
+  (interactive)
+  (org-agenda nil "d"))
+
+;;;###autoload
+(defun orfu-agenda-articles ()
+  (interactive)
+  (org-agenda nil "r"))
+
 (provide 'org-fu)
 
 ;;; org-fu.el ends here
