@@ -92,7 +92,7 @@ Try to remove superfluous information, like website title."
       (mapconcat #'funcall
                  orfu-link-hook
                  "\n")
-    (setq orfu-link-hook)))
+    (setq orfu-link-hook nil)))
 
 (defun orfu-raise-frame ()
   (if (eq system-type 'gnu/linux)
