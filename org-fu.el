@@ -22,9 +22,9 @@
 ;; http://orgmode.org/manual/Capture-templates.html#Capture-templates
 (setq org-capture-templates
       '(("t" "TODO" entry (file+headline (orfu-expand "gtd.org") "Tasks")
-    "* TODO %^{Brief Description}\nAdded: %U\n%?\n")
+         "* TODO %^{Brief Description}\nAdded: %U\n%?\n")
         ("b" "Buffer" entry (file+headline (orfu-expand "gtd.org") "Tasks")
-    "* TODO %a")))
+         "* TODO %a")))
 ;;** project
 (defvar orfu-project-list
   '(("ELISP" "e" "elisp")
@@ -104,17 +104,35 @@ Try to remove superfluous information, like website title."
 (defun orfu-handle-link ()
   (orfu-raise-frame)
   (let ((link (caar org-stored-links))
+        (title (cadr (car org-stored-links)))
         file)
     (cond ((string-match "^https://www.youtube.com/" link)
            (orfu-handle-link-youtube link))
+          ((string-match "^https://scholar.google.com/scholar.bib" link)
+           (url-retrieve
+            link
+            (lambda (status)
+              (let ((err (plist-get status :error)))
+                (if err (error
+                         "\"%s\" %s" link
+                         (downcase (nth 2 (assq (nth 2 err) url-http-codes)))))
+                (message (buffer-substring-no-properties
+                          (point-min)
+                          (point-max)))))
+            nil nil t))
           ((string-match (regexp-quote "http://stackoverflow.com/") link)
            (find-file (orfu-expand "wiki/stack.org"))
            (goto-char (point-min))
            (re-search-forward "^\\*+ +Questions" nil t))
           ((string-match orfu-github-project-name link)
-           (find-file (orfu-expand (format "wiki/%s.org" (match-string 1 link))))
-           (goto-char (point-min))
-           (re-search-forward "^\\*+ +Issues" nil t))
+           (let ((project-name (match-string 1 link))
+                 (parts (split-string title "·")))
+             (setf (cl-cadar org-stored-links)
+                   (concat (car parts)
+                           (substring (cadr parts) 7)))
+             (find-file (orfu-expand "wiki/github.org"))
+             (goto-char (point-min))
+             (re-search-forward (concat "^\\*+ +" project-name) nil t)))
           (t
            (find-file (orfu-expand "ent.org"))
            (goto-char (point-min))
