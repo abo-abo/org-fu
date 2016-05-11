@@ -191,7 +191,19 @@ Try to remove superfluous information, like website title."
                         (quote ((agenda time-up priority-down tag-up))))
                        (org-deadline-warning-days 0)))))
         ("P" "Project List"
-             ((tags "PROJECT")))))
+             ((tags "PROJECT")))
+        ("w" "Weekly"
+             ((agenda ""
+                      ((org-agenda-span 'week)
+                       (org-agenda-skip-function 'orfu-skip-daily-tasks)))))))
+
+(defun orfu-skip-daily-tasks ()
+  (let ((next-headline (save-excursion (or (outline-next-heading) (point-max))))
+        (headline (or (and (org-at-heading-p) (point))
+                      (save-excursion (org-back-to-heading)))))
+    (if (string= (org-get-repeat) "+1d")
+        next-headline
+      nil)))
 
 ;;;###autoload
 (defun orfu-agenda-quick ()
