@@ -195,9 +195,26 @@ Try to remove superfluous information, like website title."
   (interactive)
   (org-agenda nil "o"))
 
+(defvar orfu-agenda-files-home nil)
+
 ;;;###autoload
 (defun orfu-agenda-day ()
   (interactive)
+  (let* ((ct (decode-time (current-time)))
+         (hour (nth 2 ct))
+         (dow (nth 6 ct)))
+    (if (and
+         (member dow '(1 2 3 4 5))
+         (> hour 10)
+         (< hour 17))
+        (setq org-agenda-files
+              (cl-set-difference
+               org-agenda-files orfu-agenda-files-home
+               :test 'equal))
+      (setq org-agenda-files
+            (cl-union
+             org-agenda-files orfu-agenda-files-home
+             :test 'equal))))
   (org-agenda nil "d"))
 
 ;;;###autoload
