@@ -23,27 +23,8 @@
 (setq org-capture-templates
       '(("t" "TODO" entry (file+headline (orfu-expand "gtd.org") "Tasks")
          "* TODO %^{Brief Description}\nAdded: %U\n%?\n")
-        ("b" "Buffer" entry (file+headline (orfu-expand "gtd.org") "Tasks")
-         "* TODO %a")))
-;;** project
-(defvar orfu-project-list
-  '(("ELISP" "e" "elisp")
-    ("FARGS" "f" "function-args")
-    ("WORF" "w" "worf")
-    ("LISPY" "y" "lispy"))
-  "List of projects in gtd.org in '(tag key description) format.")
-
-(mapc
- (lambda (project)
-   (add-to-list
-    'org-capture-templates
-    (destructuring-bind (tag key name) project
-      `(,key ,name entry (file+olp (orfu-expand "gtd.org") "Projects" ,name)
-             ,(format
-               "* TODO %%^{Brief Description}  :%s:\nAdded: %%U  %%i\n  %%?\n"
-               tag)
-             :clock-in t :clock-resume t))))
- orfu-project-list)
+        ("f" "FILE+TODO" entry (file+headline (orfu-expand "gtd.org") "Tasks")
+         "* TODO %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n%a\n")))
 ;;** PDF
 (push
  '("p" "Pdf article" entry (file+olp (orfu-expand "gtd.org") "Projects" "Scientific Articles")
@@ -165,8 +146,7 @@ Try to remove superfluous information, like website title."
 
 ;;** agenda
 (defun orfu-tags-projects ()
-  (mapcar (lambda(x) `(tags-todo ,(car x)))
-          orfu-project-list))
+  nil)
 
 (setq org-agenda-custom-commands
       `(("n" "Agenda and all TODO's" ((agenda "") (alltodo "")))
