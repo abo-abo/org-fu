@@ -175,13 +175,15 @@ Try to remove superfluous information, like website title."
         ("w" "Weekly"
              ((agenda ""
                       ((org-agenda-span 'week)
-                       (org-agenda-skip-function 'orfu-skip-daily-tasks)))))))
+                       (org-agenda-skip-function 'orfu-skip-daily-tasks)
+                       (org-deadline-warning-days 0)))))))
 
 (defun orfu-skip-daily-tasks ()
   (let ((next-headline (save-excursion (or (outline-next-heading) (point-max))))
         (headline (or (and (org-at-heading-p) (point))
-                      (save-excursion (org-back-to-heading)))))
-    (if (string= (org-get-repeat) "+1d")
+                      (save-excursion (org-back-to-heading))))
+        (rep-str (org-get-repeat)))
+    (if (and rep-str (string-match "\\+[0-9]+d" rep-str))
         next-headline
       nil)))
 
@@ -205,7 +207,7 @@ Try to remove superfluous information, like website title."
          (dow (nth 6 ct)))
     (if (and
          (member dow '(1 2 3 4 5))
-         (> hour 10)
+         (>= hour 9)
          (< hour 17))
         (setq org-agenda-files
               (cl-set-difference
