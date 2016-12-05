@@ -21,10 +21,10 @@
 (require 'org-capture)
 ;; http://orgmode.org/manual/Capture-templates.html#Capture-templates
 (setq org-capture-templates
-      '(("t" "TODO" entry (file+headline (orfu-expand "gtd.org") "Tasks")
-         "* TODO %^{Brief Description}\nAdded: %U\n%?\n")
-        ("f" "FILE+TODO" entry (file+headline (orfu-expand "gtd.org") "Tasks")
-         "* TODO %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n%a\n")))
+      `(("t" "TODO" entry (file+headline ,(orfu-expand "gtd.org") "Tasks")
+             "* TODO %^{Brief Description}\nAdded: %U\n%?\n")
+        ("f" "FILE+TODO" entry (file+headline ,(orfu-expand "gtd.org") "Tasks")
+             "* TODO %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n%a\n")))
 ;;** PDF
 (push
  '("p" "Pdf article" entry (file+olp (orfu-expand "gtd.org") "Projects" "Scientific Articles")
