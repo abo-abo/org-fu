@@ -1,3 +1,4 @@
+;;; org-fu.el --- Org-mode tricks. -*- lexical-binding: t -*-
 ;; Expected files:
 ;; * gtd.org with level 1: Tasks, Projects
 ;;
@@ -88,7 +89,7 @@ Try to remove superfluous information, like website title."
         (title (cadr (car org-stored-links)))
         file)
     (cond ((string-match "^https://www.youtube.com/" link)
-           (orfu-handle-link-youtube link))
+           (orfu-handle-link-youtube link title))
           ((string-match "^https://scholar.google.com/scholar.bib" link)
            (url-retrieve
             link
@@ -120,26 +121,31 @@ Try to remove superfluous information, like website title."
            (re-search-forward "^\\*+ +Articles" nil t)))))
 
 (require 'async)
-(defun orfu-handle-link-youtube (link)
-  (lexical-let*
-      ((file-name (org-trim
-                   (shell-command-to-string
-                    (concat
-                     "youtube-dl \""
-                     link
-                     "\""
-                     " -o \"%(title)s.%(ext)s\" --get-filename"))))
-       (dir "~/Downloads/Videos")
-       (full-name
-        (expand-file-name file-name dir)))
+(defun orfu-handle-link-youtube (link title)
+  (let* ((file-name (concat title ".mp4"))
+         (dir "~/Downloads/Videos")
+         (full-name
+          (expand-file-name file-name dir)))
     (add-hook 'orfu-link-hook
-              (lambda ()
-                (concat
-                 (org-make-link-string dir dir)
-                 "\n"
-                 (org-make-link-string full-name file-name))))
-    (async-shell-command
-     (format "youtube-dl \"%s\" -o \"%s\"" link full-name))
+              `(lambda ()
+                 ,(concat
+                   (org-make-link-string dir dir)
+                   "\n"
+                   (org-make-link-string full-name file-name))))
+    (let* ((max-id 0)
+           id
+           (max-id
+            (progn
+              (dolist (b (buffer-list))
+                (when (string-match "\\`\\*youtube-dl \\([0-9]+\\)\\*\\'" (buffer-name b))
+                  (setq id (string-to-number (match-string 1 (buffer-name b))))
+                  (setq max-id (max id max-id))))
+              max-id))
+           (output-buffer (get-buffer-create
+                           (format "*youtube-dl %d*" (1+ max-id)))))
+      (async-shell-command
+       (format "youtube-dl -f mp4 \"%s\" -o %s" link (shell-quote-argument full-name))
+       output-buffer))
     (find-file (orfu-expand "ent.org"))
     (goto-char (point-min))
     (re-search-forward "^\\*+ +Videos" nil t)))
@@ -149,7 +155,8 @@ Try to remove superfluous information, like website title."
   nil)
 
 (setq org-agenda-custom-commands
-      `(("n" "Agenda and all TODO's" ((agenda "") (alltodo "")))
+      `(("n" "Agenda and all TODO's" ((agenda "")
+                                      (alltodo "")))
         ("h" "Office and Outside and Home"
              ((agenda)
               (tags-todo "OFFICE")
@@ -168,7 +175,7 @@ Try to remove superfluous information, like website title."
              ((agenda ""
                       ((org-agenda-ndays 1)
                        (org-agenda-sorting-strategy
-                        (quote ((agenda time-up priority-down tag-up))))
+                        '((agenda time-up priority-down tag-up)))
                        (org-deadline-warning-days 0)))))
         ("P" "Project List"
              ((tags "PROJECT")))
