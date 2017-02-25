@@ -23,7 +23,7 @@
 ;; http://orgmode.org/manual/Capture-templates.html#Capture-templates
 (setq org-capture-templates
       `(("t" "TODO" entry (file+headline ,(orfu-expand "gtd.org") "Tasks")
-             "* TODO %^{Brief Description}\nAdded: %U\n%?\n")
+             "* TODO %?\nAdded: %T\n")
         ("f" "FILE+TODO" entry (file+headline ,(orfu-expand "gtd.org") "Tasks")
              "* TODO %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n%a\n")))
 ;;** PDF
@@ -55,7 +55,7 @@
 (require 'org-protocol)
 (setq org-protocol-default-template-key "l")
 (push '("l" "Link" entry (function orfu-handle-link)
-        "* TODO %(orfu-wash-link)\nAdded: %U\n%(orfu-link-hooks)\n%?")
+        "* TODO %(orfu-wash-link)\nAdded: %T\n%(orfu-link-hooks)\n%?")
       org-capture-templates)
 
 (defun orfu-wash-link ()
