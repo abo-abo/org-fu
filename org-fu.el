@@ -206,6 +206,20 @@ Try to remove superfluous information, like website title."
 
 (defvar orfu-agenda-files-home nil)
 
+(defun orfu-vacation-p ()
+  "Requires a file \"wiki/vacation.org\".
+With contents, for example:
+    * 2017
+    ** day off <2017-03-17 Fri>"
+  (let ((vacation-file (orfu-expand "wiki/vacation.org")))
+    (when (file-exists-p vacation-file)
+      (let ((today (format-time-string "%Y-%m-%d")))
+            (with-current-buffer (find-file-noselect
+                                  vacation-file)
+              (save-excursion
+                (goto-char (point-min))
+                (re-search-forward today nil t)))))))
+
 ;;;###autoload
 (defun orfu-agenda-day ()
   (interactive)
@@ -215,7 +229,8 @@ Try to remove superfluous information, like website title."
     (if (and
          (member dow '(1 2 3 4 5))
          (>= hour 9)
-         (< hour 17))
+         (< hour 17)
+         (not (orfu-vacation-p)))
         (setq org-agenda-files
               (cl-set-difference
                org-agenda-files orfu-agenda-files-home
