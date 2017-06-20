@@ -62,7 +62,7 @@
   "Return a pretty-printed top of `org-stored-links'.
 Try to remove superfluous information, like website title."
   (let ((link (caar org-stored-links))
-        (title (cadar org-stored-links)))
+        (title (cl-cadar org-stored-links)))
     (org-make-link-string
      link
      (replace-regexp-in-string " - Stack Overflow" "" title))))
@@ -144,7 +144,8 @@ Try to remove superfluous information, like website title."
            (output-buffer (get-buffer-create
                            (format "*youtube-dl %d*" (1+ max-id)))))
       (async-shell-command
-       (format "youtube-dl -f mp4 \"%s\" -o %s" link (shell-quote-argument full-name))
+       (format "cd %s && youtube-dl -f mp4 \"%s\" -o %s" dir link
+               (shell-quote-argument file-name))
        output-buffer))
     (find-file (orfu-expand "ent.org"))
     (goto-char (point-min))
