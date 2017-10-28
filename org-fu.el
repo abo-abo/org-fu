@@ -87,38 +87,47 @@ Try to remove superfluous information, like website title."
   (orfu-raise-frame)
   (let ((link (caar org-stored-links))
         (title (cadr (car org-stored-links)))
+        (orig-buffer (nth 0 (buffer-list)))
         file)
-    (cond ((string-match "^https://www.youtube.com/" link)
-           (orfu-handle-link-youtube link title))
-          ((string-match "^https://scholar.google.com/scholar.bib" link)
-           (url-retrieve
-            link
-            (lambda (status)
-              (let ((err (plist-get status :error)))
-                (if err (error
-                         "\"%s\" %s" link
-                         (downcase (nth 2 (assq (nth 2 err) url-http-codes)))))
-                (message (buffer-substring-no-properties
-                          (point-min)
-                          (point-max)))))
-            nil nil t))
-          ((string-match (regexp-quote "http://stackoverflow.com/") link)
-           (find-file (orfu-expand "wiki/stack.org"))
-           (goto-char (point-min))
-           (re-search-forward "^\\*+ +Questions" nil t))
-          ((string-match orfu-github-project-name link)
-           (let ((project-name (match-string 1 link))
-                 (parts (split-string title "·")))
-             (setf (cl-cadar org-stored-links)
-                   (concat (car parts)
-                           (substring (cadr parts) 7)))
-             (find-file (orfu-expand "wiki/github.org"))
-             (goto-char (point-min))
-             (re-search-forward (concat "^\\*+ +" project-name) nil t)))
-          (t
-           (find-file (orfu-expand "ent.org"))
-           (goto-char (point-min))
-           (re-search-forward "^\\*+ +Articles" nil t)))))
+    (cond
+      ((with-current-buffer orig-buffer
+         (and (eq major-mode 'org-mode)
+              (save-excursion
+                (goto-char (point-min))
+                (re-search-forward "\\\\* Tasks" nil t))))
+       (switch-to-buffer orig-buffer)
+       (goto-char (match-end 0)))
+      ((string-match "^https://www.youtube.com/" link)
+       (orfu-handle-link-youtube link title))
+      ((string-match "^https://scholar.google.com/scholar.bib" link)
+       (url-retrieve
+        link
+        (lambda (status)
+          (let ((err (plist-get status :error)))
+            (if err (error
+                     "\"%s\" %s" link
+                     (downcase (nth 2 (assq (nth 2 err) url-http-codes)))))
+            (message (buffer-substring-no-properties
+                      (point-min)
+                      (point-max)))))
+        nil nil t))
+      ((string-match (regexp-quote "http://stackoverflow.com/") link)
+       (find-file (orfu-expand "wiki/stack.org"))
+       (goto-char (point-min))
+       (re-search-forward "^\\*+ +Questions" nil t))
+      ((string-match orfu-github-project-name link)
+       (let ((project-name (match-string 1 link))
+             (parts (split-string title "·")))
+         (setf (cl-cadar org-stored-links)
+               (concat (car parts)
+                       (substring (cadr parts) 7)))
+         (find-file (orfu-expand "wiki/github.org"))
+         (goto-char (point-min))
+         (re-search-forward (concat "^\\*+ +" project-name) nil t)))
+      (t
+       (find-file (orfu-expand "ent.org"))
+       (goto-char (point-min))
+       (re-search-forward "^\\*+ +Articles" nil t)))))
 
 (require 'async)
 (defun orfu-handle-link-youtube (link title)
