@@ -9,6 +9,7 @@
 ;; * wiki/stack.org with level 1: Questions
 
 ;;* base directory
+(require 'orca)
 (defun orfu-expand (name)
   (expand-file-name name "~/Dropbox/org"))
 
@@ -76,89 +77,84 @@ Try to remove superfluous information, like website title."
                  "\n")
     (setq orfu-link-hook nil)))
 
-(defun orfu-raise-frame ()
-  (if (eq system-type 'gnu/linux)
-      (call-process
-       "wmctrl" nil nil nil "-i" "-R"
-       (frame-parameter (selected-frame) 'outer-window-id))
-    (raise-frame)))
+(setq orca-handler-list
+      '((orfu-handle-link-youtube)
+        (orfu-handle-link-github)
+        (orca-handler-match-url "http://stackoverflow.com/" "~/Dropbox/org/wiki/stack.org" "Questions")
+        (orca-handler-match-url "https://www.reddit.com/" "~/Dropbox/org/wiki/emacs.org" "Reddit")
+        (orca-handler-match-url "https://emacs.stackexchange.com/" "~/Dropbox/org/wiki/emacs.org" "\\* Questions")
+        (orca-handler-current-buffer "\\* Tasks")
+        (orca-handler-file "~/Dropbox/org/ent.org" "\\* Articles")))
+
+(defun orfu-handle-link-scholar ()
+  (let ((link (caar org-stored-links)))
+    (when (string-match "^https://scholar.google.com/scholar.bib" link)
+      (url-retrieve
+       link
+       (lambda (status)
+         (let ((err (plist-get status :error)))
+           (if err (error
+                    "\"%s\" %s" link
+                    (downcase (nth 2 (assq (nth 2 err) url-http-codes)))))
+           (message (buffer-substring-no-properties
+                     (point-min)
+                     (point-max)))))
+       nil nil t))))
+
+(defun orfu-handle-link-github ()
+  (let ((link (caar org-stored-links))
+        (title (cl-cadar org-stored-links)))
+    (when (string-match orfu-github-project-name link)
+      (let ((project-name (match-string 1 link))
+            (parts (split-string title "·")))
+        (setf (cl-cadar org-stored-links)
+              (concat (car parts)
+                      (substring (cadr parts) 7)))
+        (find-file (orfu-expand "wiki/github.org"))
+        (goto-char (point-min))
+        (re-search-forward (concat "^\\*+ +" project-name) nil t)))))
 
 (defun orfu-handle-link ()
-  (orfu-raise-frame)
-  (let ((link (caar org-stored-links))
-        (title (cadr (car org-stored-links)))
-        (orig-buffer (nth 0 (buffer-list)))
-        file)
-    (cond
-      ((with-current-buffer orig-buffer
-         (and (eq major-mode 'org-mode)
-              (save-excursion
-                (goto-char (point-min))
-                (re-search-forward "\\\\* Tasks" nil t))))
-       (switch-to-buffer orig-buffer)
-       (goto-char (match-end 0)))
-      ((string-match "^https://www.youtube.com/" link)
-       (orfu-handle-link-youtube link title))
-      ((string-match "^https://scholar.google.com/scholar.bib" link)
-       (url-retrieve
-        link
-        (lambda (status)
-          (let ((err (plist-get status :error)))
-            (if err (error
-                     "\"%s\" %s" link
-                     (downcase (nth 2 (assq (nth 2 err) url-http-codes)))))
-            (message (buffer-substring-no-properties
-                      (point-min)
-                      (point-max)))))
-        nil nil t))
-      ((string-match (regexp-quote "http://stackoverflow.com/") link)
-       (find-file (orfu-expand "wiki/stack.org"))
-       (goto-char (point-min))
-       (re-search-forward "^\\*+ +Questions" nil t))
-      ((string-match orfu-github-project-name link)
-       (let ((project-name (match-string 1 link))
-             (parts (split-string title "·")))
-         (setf (cl-cadar org-stored-links)
-               (concat (car parts)
-                       (substring (cadr parts) 7)))
-         (find-file (orfu-expand "wiki/github.org"))
-         (goto-char (point-min))
-         (re-search-forward (concat "^\\*+ +" project-name) nil t)))
-      (t
-       (find-file (orfu-expand "ent.org"))
-       (goto-char (point-min))
-       (re-search-forward "^\\*+ +Articles" nil t)))))
+  (orca-handle-link))
 
 (require 'async)
-(defun orfu-handle-link-youtube (link title)
-  (let* ((file-name (concat title ".mp4"))
-         (dir "~/Downloads/Videos")
-         (full-name
-          (expand-file-name file-name dir)))
-    (add-hook 'orfu-link-hook
-              `(lambda ()
-                 ,(concat
-                   (org-make-link-string dir dir)
-                   "\n"
-                   (org-make-link-string full-name file-name))))
-    (let* ((max-id 0)
-           id
-           (max-id
-            (progn
-              (dolist (b (buffer-list))
-                (when (string-match "\\`\\*youtube-dl \\([0-9]+\\)\\*\\'" (buffer-name b))
-                  (setq id (string-to-number (match-string 1 (buffer-name b))))
-                  (setq max-id (max id max-id))))
-              max-id))
-           (output-buffer (get-buffer-create
-                           (format "*youtube-dl %d*" (1+ max-id)))))
-      (async-shell-command
-       (format "cd %s && youtube-dl -f mp4 \"%s\" -o %s" dir link
-               (shell-quote-argument file-name))
-       output-buffer))
-    (find-file (orfu-expand "ent.org"))
-    (goto-char (point-min))
-    (re-search-forward "^\\*+ +Videos" nil t)))
+(defun orfu-handle-link-youtube ()
+  (let ((link (caar org-stored-links))
+        (title (cl-cadar org-stored-links)))
+    (when (string-match "https://www.youtube.com/" link)
+      (when (string-match "\\(.*\\) - YouTube" title)
+        (setq title (match-string 1 title)))
+      (when (string-match "\\`\\(.*\\)&list=.*" link)
+        (setq link (match-string 1 link)))
+      (when (string-match "\\`\\(.*\\)&index=.*" link)
+        (setq link (match-string 1 link)))
+      (setq title (replace-regexp-in-string "[:|?]" "*" title))
+      (let* ((file-name (format "youtube-*-%s.mp4*" title))
+             (dir "~/Downloads/Videos")
+             (full-name
+              (expand-file-name file-name dir)))
+        (add-hook 'orfu-link-hook
+                  `(lambda ()
+                     ,(org-make-link-string full-name title)))
+        (let* ((max-id 0)
+               id
+               (max-id
+                (progn
+                  (dolist (b (buffer-list))
+                    (when (string-match "\\`\\*youtube-dl \\([0-9]+\\)\\*\\'" (buffer-name b))
+                      (setq id (string-to-number (match-string 1 (buffer-name b))))
+                      (setq max-id (max id max-id))))
+                  max-id))
+               (output-buffer (get-buffer-create
+                               (format "*youtube-dl %d*" (1+ max-id)))))
+          (save-window-excursion
+            (async-shell-command
+             (format "cd %s && youtube-dl -f mp4 -o \"youtube-%%(uploader)s-%%(title)s.%%(ext)s\" %s" dir link
+                     (shell-quote-argument file-name))
+             output-buffer)))
+        (find-file (orfu-expand "wiki/youtube.org"))
+        (goto-char (point-min))
+        (re-search-forward "^\\*+ +Videos" nil t)))))
 
 ;;** agenda
 (defun orfu-tags-projects ()
