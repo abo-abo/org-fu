@@ -220,11 +220,11 @@ With contents, for example:
   (let ((vacation-file (orfu-expand "wiki/vacation.org")))
     (when (file-exists-p vacation-file)
       (let ((today (format-time-string "%Y-%m-%d")))
-            (with-current-buffer (find-file-noselect
-                                  vacation-file)
-              (save-excursion
-                (goto-char (point-min))
-                (re-search-forward today nil t)))))))
+        (with-current-buffer (find-file-noselect
+                              vacation-file)
+          (save-excursion
+            (goto-char (point-min))
+            (re-search-forward (concat "<" today ">") nil t)))))))
 
 ;;;###autoload
 (defun orfu-agenda-day ()
