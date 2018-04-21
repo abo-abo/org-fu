@@ -56,7 +56,7 @@
 (require 'org-protocol)
 (setq org-protocol-default-template-key "l")
 (push '("l" "Link" entry (function orfu-handle-link)
-        "* TODO %(orfu-wash-link)\nAdded: %T\n%(orfu-link-hooks)\n%?")
+        "* TODO %(orfu-wash-link)\nAdded: %T\n%(orfu-link-hooks)\n")
       org-capture-templates)
 
 (defun orfu-wash-link ()
