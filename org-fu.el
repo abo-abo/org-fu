@@ -118,43 +118,54 @@ Try to remove superfluous information, like website title."
   (orca-handle-link))
 
 (require 'async)
+(defvar orfu-youtube-file-format "youtube-%(uploader)s-%(title)s.%(ext)s")
 (defun orfu-handle-link-youtube ()
   (let ((link (caar org-stored-links))
         (title (cl-cadar org-stored-links)))
     (when (string-match "https://www.youtube.com/" link)
-      (when (string-match "\\(.*\\) - YouTube" title)
-        (setq title (match-string 1 title)))
       (when (string-match "\\`\\(.*\\)&list=.*" link)
         (setq link (match-string 1 link)))
       (when (string-match "\\`\\(.*\\)&index=.*" link)
         (setq link (match-string 1 link)))
-      (setq title (replace-regexp-in-string "[:|?]" "*" title))
-      (let* ((file-name (format "youtube-*-%s.mp4*" title))
-             (dir "~/Downloads/Videos")
-             (full-name
-              (expand-file-name file-name dir)))
-        (add-hook 'orfu-link-hook
-                  `(lambda ()
-                     ,(org-make-link-string full-name title)))
-        (let* ((max-id 0)
-               id
-               (max-id
-                (progn
-                  (dolist (b (buffer-list))
-                    (when (string-match "\\`\\*youtube-dl \\([0-9]+\\)\\*\\'" (buffer-name b))
-                      (setq id (string-to-number (match-string 1 (buffer-name b))))
-                      (setq max-id (max id max-id))))
-                  max-id))
-               (output-buffer (get-buffer-create
-                               (format "*youtube-dl %d*" (1+ max-id)))))
-          (save-window-excursion
-            (async-shell-command
-             (format "cd %s && youtube-dl -f mp4 -o \"youtube-%%(uploader)s-%%(title)s.%%(ext)s\" %s" dir link
-                     (shell-quote-argument file-name))
-             output-buffer)))
-        (find-file (orfu-expand "wiki/youtube.org"))
-        (goto-char (point-min))
-        (re-search-forward "^\\*+ +Videos" nil t)))))
+      (let ((fname (string-trim (sc (format "youtube-dl -f mp4 --get-filename -o %S '%s'"
+                                            orfu-youtube-file-format link))))
+            channel)
+        (if (string-match "^youtube-\\([^-]+\\)-\\(.*\\)\\.mp4$" fname)
+            (progn
+              (setq channel (match-string 1 fname))
+              (setq title (match-string 2 fname))
+              (let* ((dir "~/Downloads/Videos")
+                     (full-name
+                      (expand-file-name fname dir)))
+                (add-hook 'orfu-link-hook
+                          `(lambda ()
+                             ,(org-make-link-string full-name title)))
+                (let* ((max-id 0)
+                       id
+                       (max-id
+                        (progn
+                          (dolist (b (buffer-list))
+                            (when (string-match "\\`\\*youtube-dl \\([0-9]+\\)\\*\\'" (buffer-name b))
+                              (setq id (string-to-number (match-string 1 (buffer-name b))))
+                              (setq max-id (max id max-id))))
+                          max-id))
+                       (output-buffer (get-buffer-create
+                                       (format "*youtube-dl %d*" (1+ max-id)))))
+                  (save-window-excursion
+                    (async-shell-command
+                     (format "cd %s && youtube-dl --mark-watched -f mp4 -o \"youtube-%%(uploader)s-%%(title)s.%%(ext)s\" %s" dir link
+                             (shell-quote-argument fname))
+                     output-buffer)))
+                (find-file (orfu-expand "wiki/youtube.org"))
+                (goto-char (point-min))
+                (unless (re-search-forward (concat "^\\*+ +" channel) nil t)
+                  (re-search-forward "^\\*+ +Misc$")
+                  (insert "\n** " channel)))
+              (org-capture-put
+               :immediate-finish t
+               :jump-to-captured t)
+              t)
+          (error "unexpected"))))))
 
 ;;** agenda
 (defun orfu-tags-projects ()
