@@ -235,7 +235,7 @@ With contents, for example:
                               vacation-file)
           (save-excursion
             (goto-char (point-min))
-            (re-search-forward (concat "<" today ">") nil t)))))))
+            (re-search-forward (concat "<" today "[ a-zA-Z]*>") nil t)))))))
 
 ;;;###autoload
 (defun orfu-agenda-day ()
