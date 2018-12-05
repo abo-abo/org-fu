@@ -29,7 +29,7 @@
              "* TODO %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n%a\n")))
 ;;** PDF
 (push
- '("p" "Pdf article" entry (file+olp (orfu-expand "gtd.org") "Projects" "Scientific Articles")
+ '("P" "Pdf article" entry (file+olp (orfu-expand "gtd.org") "Projects" "Scientific Articles")
    "* TODO Read %(orfu-process-current-pdf)%(org-set-tags-to\"OFFICE\")\nAdded: %U %i\n  %?\n")
  org-capture-templates)
 
@@ -57,6 +57,11 @@
 (setq org-protocol-default-template-key "l")
 (push '("l" "Link" entry (function orfu-handle-link)
         "* TODO %(orfu-wash-link)\nAdded: %T\n%(orfu-link-hooks)\n")
+      org-capture-templates)
+(push '("p" "Link" entry (function orfu-handle-link)
+        "* TODO %(orfu-wash-link)\nAdded: %T\n%(orfu-link-hooks)#+begin_quote
+%i
+#+end_quote")
       org-capture-templates)
 
 (defun orfu-wash-link ()
