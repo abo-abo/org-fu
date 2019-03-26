@@ -124,6 +124,13 @@ Try to remove superfluous information, like website title."
 
 (require 'async)
 (defvar orfu-youtube-file-format "youtube-%(uploader)s-%(title)s.%(ext)s")
+(defun orfu-shell (cmd output-buffer)
+  "Run CMD in OUTPUT-BUFFER."
+  (save-window-excursion
+    (shell output-buffer)
+    (insert cmd)
+    (comint-send-input)))
+
 (defun orfu-handle-link-youtube ()
   (let ((link (caar org-stored-links))
         (title (cl-cadar org-stored-links)))
@@ -154,18 +161,17 @@ Try to remove superfluous information, like website title."
                               (setq id (string-to-number (match-string 1 (buffer-name b))))
                               (setq max-id (max id max-id))))
                           max-id))
-                       (output-buffer (format "*youtube-dl %d*" (1+ max-id))))
-                  (save-window-excursion
-                    (shell output-buffer)
-                    (insert
-                     (format "cd %s && setsid -w youtube-dl --mark-watched -f mp4 -o \"youtube-%%(uploader)s-%%(title)s.%%(ext)s\" %s" dir link
-                             (shell-quote-argument fname)))
-                    (comint-send-input)))
-                (find-file (orfu-expand "wiki/youtube.org"))
-                (goto-char (point-min))
-                (unless (re-search-forward (concat "^\\*+ +" channel) nil t)
-                  (re-search-forward "^\\*+ +Misc$")
-                  (insert "\n** " channel)))
+                       (output-buffer (format "*youtube-dl %d*" (1+ max-id)))
+                       (cmd (format
+                             "cd %s && setsid -w youtube-dl --mark-watched -f mp4 -o \"youtube-%%(uploader)s-%%(title)s.%%(ext)s\" %s"
+                             dir link
+                             (shell-quote-argument fname))))
+                  (orfu-shell cmd output-buffer)
+                  (find-file (orfu-expand "wiki/youtube.org"))
+                  (goto-char (point-min))
+                  (unless (re-search-forward (concat "^\\*+ +" channel) nil t)
+                    (re-search-forward "^\\*+ +Misc$")
+                    (insert "\n** " channel))))
               (org-capture-put
                :immediate-finish t
                :jump-to-captured t)
