@@ -89,7 +89,7 @@ Try to remove superfluous information, like website title."
         (orca-handler-match-url "https://www.reddit.com/" "~/Dropbox/org/wiki/emacs.org" "Reddit")
         (orca-handler-match-url "https://emacs.stackexchange.com/" "~/Dropbox/org/wiki/emacs.org" "\\* Questions")
         (orca-handler-current-buffer "\\* Tasks")
-        (orca-handler-file "~/Dropbox/org/ent.org" "\\* Articles")))
+        (orca-handler-file "~/Dropbox/org/wiki/ent.org" "\\* Articles")))
 
 (defun orfu-handle-link-scholar ()
   (let ((link (caar org-stored-links)))
@@ -132,51 +132,55 @@ Try to remove superfluous information, like website title."
     (comint-send-input)))
 
 (defun orfu-handle-link-youtube ()
-  (let ((link (caar org-stored-links))
-        (title (cl-cadar org-stored-links)))
+  (let ((link (caar org-stored-links)))
     (when (string-match "https://www.youtube.com/" link)
       (when (string-match "\\`\\(.*\\)&list=.*" link)
         (setq link (match-string 1 link)))
       (when (string-match "\\`\\(.*\\)&index=.*" link)
         (setq link (match-string 1 link)))
-      (let ((fname (string-trim (sc (format "youtube-dl -f mp4 --get-filename -o %S '%s'"
-                                            orfu-youtube-file-format link))))
-            channel)
-        (if (string-match "^youtube-\\([^-]+\\)-\\(.*\\)\\.mp4$" fname)
-            (progn
-              (setq channel (match-string 1 fname))
-              (setq title (match-string 2 fname))
-              (let* ((dir "~/Downloads/Videos")
-                     (full-name
-                      (expand-file-name fname dir)))
-                (add-hook 'orfu-link-hook
-                          `(lambda ()
-                             ,(org-make-link-string full-name title)))
-                (let* ((max-id 0)
-                       id
-                       (max-id
-                        (progn
-                          (dolist (b (buffer-list))
-                            (when (string-match "\\`\\*youtube-dl \\([0-9]+\\)\\*\\'" (buffer-name b))
-                              (setq id (string-to-number (match-string 1 (buffer-name b))))
-                              (setq max-id (max id max-id))))
-                          max-id))
-                       (output-buffer (format "*youtube-dl %d*" (1+ max-id)))
-                       (cmd (format
-                             "cd %s && setsid -w youtube-dl --mark-watched -f mp4 -o \"youtube-%%(uploader)s-%%(title)s.%%(ext)s\" %s"
-                             dir link
-                             (shell-quote-argument fname))))
-                  (orfu-shell cmd output-buffer)
-                  (find-file (orfu-expand "wiki/youtube.org"))
-                  (goto-char (point-min))
-                  (unless (re-search-forward (concat "^\\*+ +" channel) nil t)
-                    (re-search-forward "^\\*+ +Misc$")
-                    (insert "\n** " channel))))
-              (org-capture-put
-               :immediate-finish t
-               :jump-to-captured t)
-              t)
-          (error "unexpected"))))))
+      (let* ((max-id 0)
+             id
+             (max-id
+              (progn
+                (dolist (b (buffer-list))
+                  (when (string-match "\\`\\*youtube-dl \\([0-9]+\\)\\*\\'" (buffer-name b))
+                    (setq id (string-to-number (match-string 1 (buffer-name b))))
+                    (setq max-id (max id max-id))))
+                max-id))
+             (output-buffer (format "*youtube-dl %d*" (1+ max-id)))
+             (dir "~/Downloads/Videos")
+             (cmd (format
+                   "cd %s && setsid -w youtube-dl --write-info-json -f mp4 -o \"youtube-%%(uploader)s-%%(title)s.%%(ext)s\" %s"
+                   dir link
+                   (shell-quote-argument fname)))
+             description-json-file
+             (json (progn
+                     (orfu-shell cmd output-buffer)
+                     (while (null (setq description-json-file (car (directory-files dir t "\\.info\\.json\\'"))))
+                       (sit-for 0.1))
+                     (json-read-file description-json-file)))
+             (fname (expand-file-name (cdr (assoc '_filename json)) dir))
+             (title (cdr (assoc 'title json)))
+             ;; (assoc 'duration json)
+             (fname-part (concat fname ".part"))
+             (channel (cdr (assoc 'uploader json))))
+        (delete-file description-json-file)
+        (add-hook 'orfu-link-hook
+                  `(lambda ()
+                     ,(org-make-link-string fname title)))
+        (find-file (orfu-expand "wiki/youtube.org"))
+        (goto-char (point-min))
+        (unless (re-search-forward (concat "^\\*+ +" channel) nil t)
+          (re-search-forward "^\\*+ +Misc$")
+          (insert "\n** " channel))
+        (org-capture-put
+         :immediate-finish t
+         :jump-to-captured t)
+        (while (not (or (file-exists-p fname) (file-exists-p fname-part)))
+          (sit-for 0.1))
+        (when (file-exists-p fname-part)
+          (setq fname fname-part))
+        (dig-start "vlc" fname)))))
 
 ;;** agenda
 (defun orfu-tags-projects ()
