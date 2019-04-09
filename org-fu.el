@@ -154,17 +154,17 @@ Try to remove superfluous information, like website title."
       link)))
 
 (defun orfu--handle-link-youtube-1 (link)
-  (let* ((dir "~/Downloads/Videos")
-         (cmd (format
-               "cd %s && setsid -w youtube-dl --write-info-json -f mp4 -o \"youtube-%%(uploader)s-%%(title)s.%%(ext)s\" %s"
-               dir link))
+  (let* ((default-directory "~/Downloads/Videos")
+         (cmd (concat
+               "setsid -w youtube-dl --write-info-json -f mp4 -o \"youtube-%(uploader)s-%(title)s.%(ext)s\" "
+               link))
          description-json-file
          (json (progn
                  (orfu--youtube-shell cmd)
                  (while (null (setq description-json-file (car (directory-files dir t "\\.info\\.json\\'"))))
                    (sit-for 0.1))
                  (json-read-file description-json-file)))
-         (fname (expand-file-name (cdr (assoc '_filename json)) dir))
+         (fname (cdr (assoc '_filename json)))
          (title (cdr (assoc 'title json)))
          ;; (assoc 'duration json)
          (fname-part (concat fname ".part"))
