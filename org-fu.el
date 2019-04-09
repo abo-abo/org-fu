@@ -138,8 +138,11 @@ Try to remove superfluous information, like website title."
           (progn
             (dolist (b (buffer-list))
               (when (string-match "\\`\\*youtube-dl \\([0-9]+\\)\\*\\'" (buffer-name b))
-                (setq id (string-to-number (match-string 1 (buffer-name b))))
-                (setq max-id (max id max-id))))
+                (with-current-buffer b
+                  (if (looking-back comint-prompt-regexp)
+                      (kill-buffer)
+                    (setq id (string-to-number (match-string 1 (buffer-name b))))
+                    (setq max-id (max id max-id))))))
             max-id))
          (output-buffer (format "*youtube-dl %d*" (1+ max-id))))
     (orfu-shell cmd output-buffer)))
