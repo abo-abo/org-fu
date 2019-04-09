@@ -150,6 +150,16 @@ Try to remove superfluous information, like website title."
         (setq link (match-string 1 link)))
       link)))
 
+(defun orfu--youtube-json (cmd)
+  (orfu-shell cmd (orfu--youtube-output-buffer))
+  (let (description-json-file)
+    (while (not (setq description-json-file
+                      (car (directory-files default-directory t
+                                            "\\.info\\.json\\'"))))
+      (sit-for 0.1))
+    (prog1 (json-read-file description-json-file)
+      (delete-file description-json-file))))
+
 (defvar orfu-youtube-file-format "youtube-%(uploader)s-%(title)s.%(ext)s")
 
 (defun orfu--handle-link-youtube-1 (link)
@@ -157,18 +167,12 @@ Try to remove superfluous information, like website title."
          (cmd (format
                "setsid -w youtube-dl --write-info-json -f mp4 -o %S %s"
                orfu-youtube-file-format link))
-         description-json-file
-         (json (progn
-                 (orfu-shell cmd (orfu--youtube-output-buffer))
-                 (while (null (setq description-json-file (car (directory-files dir t "\\.info\\.json\\'"))))
-                   (sit-for 0.1))
-                 (json-read-file description-json-file)))
+         (json (orfu--youtube-json cmd))
          (fname (cdr (assoc '_filename json)))
          (title (cdr (assoc 'title json)))
          ;; (assoc 'duration json)
          (fname-part (concat fname ".part"))
          (channel (cdr (assoc 'uploader json))))
-    (delete-file description-json-file)
     (add-hook 'orfu-link-hook
               `(lambda ()
                  ,(org-make-link-string fname title)))
