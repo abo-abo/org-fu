@@ -131,6 +131,19 @@ Try to remove superfluous information, like website title."
     (insert cmd)
     (comint-send-input)))
 
+(defun orfu--youtube-shell (cmd)
+  (let* ((max-id 0)
+         id
+         (max-id
+          (progn
+            (dolist (b (buffer-list))
+              (when (string-match "\\`\\*youtube-dl \\([0-9]+\\)\\*\\'" (buffer-name b))
+                (setq id (string-to-number (match-string 1 (buffer-name b))))
+                (setq max-id (max id max-id))))
+            max-id))
+         (output-buffer (format "*youtube-dl %d*" (1+ max-id))))
+    (orfu-shell cmd output-buffer)))
+
 (defun orfu--youtube-link ()
   (let ((link (caar org-stored-links)))
     (when (string-match "https://www.youtube.com/" link)
@@ -141,24 +154,13 @@ Try to remove superfluous information, like website title."
       link)))
 
 (defun orfu--handle-link-youtube-1 (link)
-  (let* ((max-id 0)
-         id
-         (max-id
-          (progn
-            (dolist (b (buffer-list))
-              (when (string-match "\\`\\*youtube-dl \\([0-9]+\\)\\*\\'" (buffer-name b))
-                (setq id (string-to-number (match-string 1 (buffer-name b))))
-                (setq max-id (max id max-id))))
-            max-id))
-         (output-buffer (format "*youtube-dl %d*" (1+ max-id)))
-         (dir "~/Downloads/Videos")
+  (let* ((dir "~/Downloads/Videos")
          (cmd (format
                "cd %s && setsid -w youtube-dl --write-info-json -f mp4 -o \"youtube-%%(uploader)s-%%(title)s.%%(ext)s\" %s"
-               dir link
-               (shell-quote-argument fname)))
+               dir link))
          description-json-file
          (json (progn
-                 (orfu-shell cmd output-buffer)
+                 (orfu--youtube-shell cmd)
                  (while (null (setq description-json-file (car (directory-files dir t "\\.info\\.json\\'"))))
                    (sit-for 0.1))
                  (json-read-file description-json-file)))
