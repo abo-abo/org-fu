@@ -132,20 +132,16 @@ Try to remove superfluous information, like website title."
     (comint-send-input)))
 
 (defun orfu--youtube-output-buffer ()
-  (let* ((max-id 0)
-         id
-         (max-id
-          (progn
-            (dolist (b (buffer-list))
-              (when (string-match "\\`\\*youtube-dl \\([0-9]+\\)\\*\\'" (buffer-name b))
-                (with-current-buffer b
-                  (if (looking-back comint-prompt-regexp)
-                      (kill-buffer)
-                    (setq id (string-to-number (match-string 1 (buffer-name b))))
-                    (setq max-id (max id max-id))))))
-            max-id))
-         (output-buffer (format "*youtube-dl %d*" (1+ max-id))))
-    output-buffer))
+  (let ((max-id 0))
+    (dolist (b (buffer-list))
+      (when (string-match "\\`\\*youtube-dl \\([0-9]+\\)\\*\\'" (buffer-name b))
+        (with-current-buffer b
+          (if (looking-back comint-prompt-regexp)
+              (kill-buffer)
+            (setq max-id
+                  (max (string-to-number (match-string 1 (buffer-name b)))
+                       max-id))))))
+    (format "*youtube-dl %d*" (1+ max-id))))
 
 (defun orfu--youtube-link ()
   (let ((link (caar org-stored-links)))
