@@ -122,8 +122,6 @@ Try to remove superfluous information, like website title."
 (defun orfu-handle-link ()
   (orca-handle-link))
 
-(require 'async)
-(defvar orfu-youtube-file-format "youtube-%(uploader)s-%(title)s.%(ext)s")
 (defun orfu-shell (cmd output-buffer)
   "Run CMD in OUTPUT-BUFFER."
   (save-window-excursion
@@ -152,11 +150,13 @@ Try to remove superfluous information, like website title."
         (setq link (match-string 1 link)))
       link)))
 
+(defvar orfu-youtube-file-format "youtube-%(uploader)s-%(title)s.%(ext)s")
+
 (defun orfu--handle-link-youtube-1 (link)
   (let* ((default-directory "~/Downloads/Videos")
-         (cmd (concat
-               "setsid -w youtube-dl --write-info-json -f mp4 -o \"youtube-%(uploader)s-%(title)s.%(ext)s\" "
-               link))
+         (cmd (format
+               "setsid -w youtube-dl --write-info-json -f mp4 -o %S %s"
+               orfu-youtube-file-format link))
          description-json-file
          (json (progn
                  (orfu-shell cmd (orfu--youtube-output-buffer))
