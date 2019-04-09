@@ -131,7 +131,7 @@ Try to remove superfluous information, like website title."
     (insert cmd)
     (comint-send-input)))
 
-(defun orfu--youtube-shell (cmd)
+(defun orfu--youtube-output-buffer ()
   (let* ((max-id 0)
          id
          (max-id
@@ -145,7 +145,7 @@ Try to remove superfluous information, like website title."
                     (setq max-id (max id max-id))))))
             max-id))
          (output-buffer (format "*youtube-dl %d*" (1+ max-id))))
-    (orfu-shell cmd output-buffer)))
+    output-buffer))
 
 (defun orfu--youtube-link ()
   (let ((link (caar org-stored-links)))
@@ -163,7 +163,7 @@ Try to remove superfluous information, like website title."
                link))
          description-json-file
          (json (progn
-                 (orfu--youtube-shell cmd)
+                 (orfu-shell cmd (orfu--youtube-output-buffer))
                  (while (null (setq description-json-file (car (directory-files dir t "\\.info\\.json\\'"))))
                    (sit-for 0.1))
                  (json-read-file description-json-file)))
