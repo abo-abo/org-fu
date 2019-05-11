@@ -24,13 +24,11 @@
 ;; http://orgmode.org/manual/Capture-templates.html#Capture-templates
 (setq org-capture-templates
       `(("t" "TODO" entry (file+headline ,(orfu-expand "gtd.org") "Tasks")
-             "* TODO %?\nAdded: %T\n")
-        ("f" "FILE+TODO" entry (file+headline ,(orfu-expand "gtd.org") "Tasks")
-             "* TODO %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n%a\n")))
+             "* TODO %?\nAdded: %T\n")))
 ;;** PDF
 (push
- '("P" "Pdf article" entry (file+olp (orfu-expand "gtd.org") "Projects" "Scientific Articles")
-   "* TODO Read %(orfu-process-current-pdf)%(org-set-tags-to\"OFFICE\")\nAdded: %U %i\n  %?\n")
+ `("p" "Pdf article" entry (file+olp ,(orfu-expand "gtd.org") "Projects" "Articles")
+       "* TODO Read %(orfu-process-current-pdf)%(org-set-tags-to\"OFFICE\")\nAdded: %U %i\n  %?\n")
  org-capture-templates)
 
 (require 'org-attach)
@@ -57,11 +55,6 @@
 (setq org-protocol-default-template-key "l")
 (push '("l" "Link" entry (function orfu-handle-link)
         "* TODO %(orfu-wash-link)\nAdded: %T\n%(orfu-link-hooks)\n")
-      org-capture-templates)
-(push '("p" "Link" entry (function orfu-handle-link)
-        "* TODO %(orfu-wash-link)\nAdded: %T\n%(orfu-link-hooks)#+begin_quote
-%i
-#+end_quote")
       org-capture-templates)
 
 (defun orfu-wash-link ()
@@ -150,13 +143,24 @@ Try to remove superfluous information, like website title."
         (setq link (match-string 1 link)))
       link)))
 
+(defmacro orfu-wait (expr &optional n-seconds)
+  (setq n-seconds (or n-seconds 10))
+  `(let ((tic (current-time))
+         timeout)
+     (while (not (or ,expr timeout))
+       (when (> (time-to-seconds (time-subtract (current-time) tic)) ,n-seconds)
+         (setq timeout t))
+       (sit-for 0.1))
+     (when timeout
+       (error "Waited %d seconds for %S" ,n-seconds ',expr))))
+
 (defun orfu--youtube-json (cmd)
   (orfu-shell cmd (orfu--youtube-output-buffer))
   (let (description-json-file)
-    (while (not (setq description-json-file
-                      (car (directory-files default-directory t
-                                            "\\.info\\.json\\'"))))
-      (sit-for 0.1))
+    (orfu-wait
+     (setq description-json-file
+           (car (directory-files default-directory t
+                                 "\\.info\\.json\\'"))))
     (prog1 (json-read-file description-json-file)
       (delete-file description-json-file))))
 
@@ -183,11 +187,12 @@ Try to remove superfluous information, like website title."
     (org-capture-put
      :immediate-finish t
      :jump-to-captured t)
-    (while (not (or (file-exists-p fname) (file-exists-p fname-part)))
-      (sit-for 0.1))
+    (orfu-wait
+     (or (file-exists-p fname) (file-exists-p fname-part)))
     (when (file-exists-p fname-part)
       (setq fname fname-part))
-    (sit-for 0.1)
+    (orfu-wait
+     (> (read (counsel--call "du" "-schb" fname)) (* 2 1024 1024)))
     (dig-start "vlc" fname)))
 
 (defun orfu-handle-link-youtube ()
