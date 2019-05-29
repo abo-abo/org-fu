@@ -170,6 +170,7 @@ Try to remove superfluous information, like website title."
 (defvar orfu-youtube-file-format "youtube-%(uploader)s-%(title)s.%(ext)s")
 
 (defun orfu--handle-link-youtube-1 (link)
+  (setq link (replace-regexp-in-string "time_continue=[0-9]+&" "" link))
   (let* ((default-directory "~/Downloads/Videos")
          (cmd (format
                "setsid -w youtube-dl --write-info-json -f mp4 -o %S %s"
