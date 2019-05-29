@@ -155,6 +155,9 @@ Try to remove superfluous information, like website title."
        (error "Waited %d seconds for %S" ,n-seconds ',expr))))
 
 (defun orfu--youtube-json (cmd)
+  (dolist (file (directory-files default-directory t
+                                 "\\.info\\.json\\'"))
+    (delete-file file))
   (orfu-shell cmd (orfu--youtube-output-buffer))
   (let (description-json-file)
     (orfu-wait
