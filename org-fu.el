@@ -76,13 +76,11 @@ Try to remove superfluous information, like website title."
     (setq orfu-link-hook nil)))
 
 (setq orca-handler-list
-      '((orfu-handle-link-youtube)
-        (orfu-handle-link-github)
-        (orca-handler-match-url "http://stackoverflow.com/" "~/Dropbox/org/wiki/stack.org" "Questions")
-        (orca-handler-match-url "https://www.reddit.com/" "~/Dropbox/org/wiki/emacs.org" "Reddit")
-        (orca-handler-match-url "https://emacs.stackexchange.com/" "~/Dropbox/org/wiki/emacs.org" "\\* Questions")
-        (orca-handler-current-buffer "\\* Tasks")
-        (orca-handler-file "~/Dropbox/org/wiki/ent.org" "\\* Articles")))
+      (delete-dups
+       (append
+        '((orfu-handle-link-youtube)
+          (orfu-handle-link-github))
+        orca-handler-list)))
 
 (defun orfu-handle-link-scholar ()
   (let ((link (caar org-stored-links)))
