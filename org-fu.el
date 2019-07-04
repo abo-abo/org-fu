@@ -189,6 +189,18 @@ Try to remove superfluous information, like website title."
     (org-capture-put
      :immediate-finish t
      :jump-to-captured t)
+    (condition-case nil
+        (orfu--start-vlc fname fname-part)
+      (error
+       (progn
+         (orfu-shell
+          (replace-regexp-in-string "-f mp4 " "" cmd)
+          (orfu--youtube-output-buffer))
+         (orfu--start-vlc fname fname-part))))
+    t))
+
+(defun orfu--start-vlc (fname fname-part)
+  (progn
     (orfu-wait
      (or (file-exists-p fname) (file-exists-p fname-part)))
     (when (file-exists-p fname-part)
@@ -196,8 +208,7 @@ Try to remove superfluous information, like website title."
     (orfu-wait
      (> (read (counsel--command "du" "-schb" fname)) (* 2 1024 1024)))
     (when (string= "" (shell-command-to-string "pidof vlc"))
-      (dig-start "vlc" fname))
-    t))
+      (orly-start "vlc" fname))))
 
 (defun orfu-handle-link-youtube ()
   (let ((link (orfu--youtube-link)))
