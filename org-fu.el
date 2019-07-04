@@ -27,7 +27,7 @@
              "* TODO %?\nAdded: %T\n")))
 ;;** PDF
 (push
- `("p" "Pdf article" entry (file+olp ,(orfu-expand "gtd.org") "Projects" "Articles")
+ `("P" "Pdf article" entry (file+olp ,(orfu-expand "gtd.org") "Projects" "Articles")
        "* TODO Read %(orfu-process-current-pdf)%(org-set-tags-to\"OFFICE\")\nAdded: %U %i\n  %?\n")
  org-capture-templates)
 
