@@ -116,9 +116,9 @@ Try to remove superfluous information, like website title."
 (defun orfu-shell (cmd output-buffer)
   "Run CMD in OUTPUT-BUFFER."
   (save-window-excursion
-    (shell output-buffer)
-    (insert cmd)
-    (comint-send-input)))
+    (with-current-buffer (shell output-buffer)
+      (insert cmd)
+      (comint-send-input))))
 
 (defun orfu--youtube-output-buffer ()
   (let ((max-id 0))
