@@ -167,7 +167,7 @@ Try to remove superfluous information, like website title."
 
 (defvar orfu-youtube-file-format "youtube-%(uploader)s-%(title)s.%(ext)s")
 
-(defun orfu--handle-link-youtube-1 (link)
+(defun orfu--handle-link-youtube-1 (link &optional no-org)
   (setq link (replace-regexp-in-string "time_continue=[0-9]+&" "" link))
   (let* ((default-directory "~/Downloads/Videos")
          (cmd (format
@@ -178,17 +178,18 @@ Try to remove superfluous information, like website title."
          (title (cdr (assoc 'title json)))
          (fname-part (concat fname ".part"))
          (channel (cdr (assoc 'uploader json))))
-    (add-hook 'orfu-link-hook
-              `(lambda ()
-                 ,(concat (org-make-link-string (expand-file-name fname) title)
-                          (format "\nDuration: %d." (/ (cdr (assoc 'duration json)) 60)))))
-    (goto-char (point-min))
-    (unless (re-search-forward (concat "^\\*+ +" channel) nil t)
-      (re-search-forward "^\\*+ +Misc$")
-      (insert "\n** " channel))
-    (org-capture-put
-     :immediate-finish t
-     :jump-to-captured t)
+    (unless no-org
+      (add-hook 'orfu-link-hook
+                `(lambda ()
+                   ,(concat (org-make-link-string (expand-file-name fname) title)
+                            (format "\nDuration: %d." (/ (cdr (assoc 'duration json)) 60)))))
+      (goto-char (point-min))
+      (unless (re-search-forward (concat "^\\*+ +" channel) nil t)
+        (re-search-forward "^\\*+ +Misc$")
+        (insert "\n** " channel))
+      (org-capture-put
+       :immediate-finish t
+       :jump-to-captured t))
     (condition-case nil
         (orfu--start-vlc fname fname-part)
       (error
