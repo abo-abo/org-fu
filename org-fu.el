@@ -200,16 +200,20 @@ Try to remove superfluous information, like website title."
          (orfu--start-vlc fname fname-part))))
     t))
 
+(defcustom orfu-start-vlc-if-already-running t
+  "When non-nil, start a new VLC."
+  :type 'boolean)
+
 (defun orfu--start-vlc (fname fname-part)
-  (progn
-    (orfu-wait
-     (or (file-exists-p fname) (file-exists-p fname-part)))
-    (when (file-exists-p fname-part)
-      (setq fname fname-part))
-    (orfu-wait
-     (> (read (counsel--command "du" "-schb" fname)) (* 2 1024 1024)))
-    (when (string= "" (shell-command-to-string "pidof vlc"))
-      (orly-start "vlc" fname))))
+  (orfu-wait
+   (or (file-exists-p fname) (file-exists-p fname-part)))
+  (when (file-exists-p fname-part)
+    (setq fname fname-part))
+  (orfu-wait
+   (> (read (counsel--command "du" "-schb" fname)) (* 2 1024 1024)))
+  (when (or orfu-start-vlc-if-already-running
+            (string= "" (shell-command-to-string "pidof vlc")))
+    (orly-start "vlc" fname)))
 
 (defun orfu-handle-link-youtube ()
   (let ((link (orfu--youtube-link)))
