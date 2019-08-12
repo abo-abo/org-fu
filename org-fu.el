@@ -207,13 +207,20 @@ Try to remove superfluous information, like website title."
 (defun orfu--start-vlc (fname fname-part)
   (orfu-wait
    (or (file-exists-p fname) (file-exists-p fname-part)))
-  (when (file-exists-p fname-part)
-    (setq fname fname-part))
   (orfu-wait
-   (> (read (counsel--command "du" "-schb" fname)) (* 2 1024 1024)))
+   (or (file-exists-p fname)
+       (and (file-exists-p fname-part)
+            (> (read (counsel--command
+                      "du" "-schb"
+                      fname-part))
+               (* 2 1024 1024)))))
   (when (or orfu-start-vlc-if-already-running
             (string= "" (shell-command-to-string "pidof vlc")))
-    (orly-start "vlc" fname)))
+    (orly-start
+     "vlc"
+     (if (file-exists-p fname-part)
+         fname-part
+       fname))))
 
 (defun orfu-handle-link-youtube ()
   (let ((link (orfu--youtube-link)))
