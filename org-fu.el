@@ -10,6 +10,7 @@
 
 ;;* base directory
 (require 'orca)
+(require 'json)
 (defun orfu-expand (name)
   (expand-file-name name "~/Dropbox/org"))
 
@@ -213,7 +214,7 @@ Try to remove superfluous information, like website title."
             (> (read (counsel--command
                       "du" "-schb"
                       fname-part))
-               (* 2 1024 1024)))))
+               (* 3 1024 1024)))))
   (when (or orfu-start-vlc-if-already-running
             (string= "" (shell-command-to-string "pidof vlc")))
     (orly-start
