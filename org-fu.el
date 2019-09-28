@@ -198,7 +198,9 @@ Try to remove superfluous information, like website title."
          (orfu-shell
           (replace-regexp-in-string "-f mp4 " "" cmd)
           (orfu--youtube-output-buffer))
-         (orfu--start-vlc fname fname-part))))
+         (orfu--start-vlc
+          (replace-regexp-in-string "mp4$" "webm" fname)
+          (replace-regexp-in-string "mp4$" "webm" fname)))))
     t))
 
 (defcustom orfu-start-vlc-if-already-running t
