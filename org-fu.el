@@ -178,7 +178,8 @@ Try to remove superfluous information, like website title."
          (fname (cdr (assoc '_filename json)))
          (title (cdr (assoc 'title json)))
          (fname-part (concat fname ".part"))
-         (channel (cdr (assoc 'uploader json))))
+         (channel (cdr (assoc 'uploader json)))
+         fname-alt)
     (unless no-org
       (add-hook 'orfu-link-hook
                 `(lambda ()
@@ -191,16 +192,21 @@ Try to remove superfluous information, like website title."
       (org-capture-put
        :immediate-finish t
        :jump-to-captured t))
-    (condition-case nil
-        (orfu--start-vlc fname fname-part)
-      (error
-       (progn
-         (orfu-shell
-          (replace-regexp-in-string "-f mp4 " "" cmd)
-          (orfu--youtube-output-buffer))
-         (orfu--start-vlc
-          (replace-regexp-in-string "mp4$" "webm" fname)
-          (replace-regexp-in-string "mp4$" "webm" fname)))))
+    (cond ((file-exists-p
+            (setq fname-alt (replace-regexp-in-string "mp4$" "mkv" fname)))
+           (orfu--start-vlc fname-alt fname-alt))
+          ((file-exists-p
+            (setq fname-alt (replace-regexp-in-string "mp4$" "webm" fname)))
+           (orfu--start-vlc fname-alt fname-alt))
+          (t
+           (condition-case nil
+               (orfu--start-vlc fname fname-part)
+             (error
+              (progn
+                (orfu-shell
+                 (replace-regexp-in-string "-f mp4 " "" cmd)
+                 (orfu--youtube-output-buffer))
+                (orfu--start-vlc fname fname))))))
     t))
 
 (defcustom orfu-start-vlc-if-already-running t
