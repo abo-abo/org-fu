@@ -11,8 +11,11 @@
 ;;* base directory
 (require 'orca)
 (require 'json)
+
+(defvar orfu-org-basedir "~/Dropbox/org")
+
 (defun orfu-expand (name)
-  (expand-file-name name "~/Dropbox/org"))
+  (expand-file-name name orfu-org-basedir))
 
 (defcustom orfu-github-project-name
   "https://github\\.com/abo-abo/\\([^/]+\\)"
@@ -329,7 +332,8 @@ With contents, for example:
             (cl-union
              org-agenda-files orfu-agenda-files-home
              :test 'equal))))
-  (org-agenda nil "d"))
+  (org-agenda nil "d")
+  (setq default-directory orfu-org-basedir))
 
 ;;;###autoload
 (defun orfu-agenda-articles ()
