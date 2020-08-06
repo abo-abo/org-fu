@@ -162,12 +162,15 @@ Try to remove superfluous information, like website title."
     (delete-file file))
   (orfu-shell cmd (orfu--youtube-output-buffer))
   (let (description-json-file)
-    (orfu-wait
-     (setq description-json-file
-           (car (directory-files default-directory t
-                                 "\\.info\\.json\\'"))))
-    (prog1 (json-read-file description-json-file)
-      (delete-file description-json-file))))
+    (ignore-errors
+      (orfu-wait
+       (setq description-json-file
+             (car (directory-files default-directory t
+                                   "\\.info\\.json\\'")))
+       5))
+    (when description-json-file
+      (prog1 (json-read-file description-json-file)
+        (delete-file description-json-file)))))
 
 (defvar orfu-youtube-file-format "youtube-%(uploader)s-%(title)s.%(ext)s")
 
@@ -177,40 +180,48 @@ Try to remove superfluous information, like website title."
          (cmd (format
                "setsid -w youtube-dl --write-info-json -f mp4 -o %S %s"
                orfu-youtube-file-format link))
-         (json (orfu--youtube-json cmd))
-         (fname (cdr (assoc '_filename json)))
-         (title (cdr (assoc 'title json)))
-         (fname-part (concat fname ".part"))
-         (channel (cdr (assoc 'uploader json)))
-         fname-alt)
-    (unless no-org
-      (add-hook 'orfu-link-hook
-                `(lambda ()
-                   ,(concat (org-make-link-string (expand-file-name fname) title)
-                            (format "\nDuration: %d." (/ (cdr (assoc 'duration json)) 60)))))
-      (goto-char (point-min))
-      (unless (re-search-forward (concat "^\\*+ +" channel) nil t)
-        (re-search-forward "^\\*+ +Misc$")
-        (insert "\n** " channel))
-      (org-capture-put
-       :immediate-finish t
-       :jump-to-captured t))
-    (cond ((file-exists-p
-            (setq fname-alt (replace-regexp-in-string "mp4$" "mkv" fname)))
-           (orfu--start-vlc fname-alt fname-alt))
-          ((file-exists-p
-            (setq fname-alt (replace-regexp-in-string "mp4$" "webm" fname)))
-           (orfu--start-vlc fname-alt fname-alt))
-          (t
-           (condition-case nil
-               (orfu--start-vlc fname fname-part)
-             (error
-              (progn
-                (orfu-shell
-                 (replace-regexp-in-string "-f mp4 " "" cmd)
-                 (orfu--youtube-output-buffer))
-                (orfu--start-vlc fname fname))))))
-    t))
+         (json (orfu--youtube-json cmd)))
+    (if (not json)
+        (progn
+          (goto-char (point-min))
+          (re-search-forward "^\\*+ +Videos$")
+          (org-capture-put
+           :immediate-finish t
+           :jump-to-captured t)
+          t)
+      (let* ((fname (cdr (assoc '_filename json)))
+             (title (cdr (assoc 'title json)))
+             (fname-part (concat fname ".part"))
+             (channel (cdr (assoc 'uploader json)))
+             fname-alt)
+        (unless no-org
+          (add-hook 'orfu-link-hook
+                    `(lambda ()
+                       ,(concat (org-make-link-string (expand-file-name fname) title)
+                                (format "\nDuration: %d." (/ (cdr (assoc 'duration json)) 60)))))
+          (goto-char (point-min))
+          (unless (re-search-forward (concat "^\\*+ +" channel) nil t)
+            (re-search-forward "^\\*+ +Misc$")
+            (insert "\n** " channel))
+          (org-capture-put
+           :immediate-finish t
+           :jump-to-captured t))
+        (cond ((file-exists-p
+                (setq fname-alt (replace-regexp-in-string "mp4$" "mkv" fname)))
+               (orfu--start-vlc fname-alt fname-alt))
+              ((file-exists-p
+                (setq fname-alt (replace-regexp-in-string "mp4$" "webm" fname)))
+               (orfu--start-vlc fname-alt fname-alt))
+              (t
+               (condition-case nil
+                   (orfu--start-vlc fname fname-part)
+                 (error
+                  (progn
+                    (orfu-shell
+                     (replace-regexp-in-string "-f mp4 " "" cmd)
+                     (orfu--youtube-output-buffer))
+                    (orfu--start-vlc fname fname))))))
+        t))))
 
 (defcustom orfu-start-vlc-if-already-running t
   "When non-nil, start a new VLC."
