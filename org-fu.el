@@ -11,6 +11,8 @@
 ;;* base directory
 (require 'orca)
 (require 'json)
+(require 'org-protocol)
+(require 'org-capture)
 
 (defvar orfu-org-basedir "~/Dropbox/org")
 
@@ -24,42 +26,16 @@
 
 ;;* capture
 ;;** basic
-(require 'org-capture)
+(setq org-protocol-default-template-key "L")
+
 ;; http://orgmode.org/manual/Capture-templates.html#Capture-templates
 (setq org-capture-templates
       `(("t" "TODO" entry (file+headline ,(orfu-expand "gtd.org") "Tasks")
-             "* TODO %?\nAdded: %T\n")))
-;;** PDF
-(push
- `("P" "Pdf article" entry (file+olp ,(orfu-expand "gtd.org") "Projects" "Articles")
-       "* TODO Read %(orfu-process-current-pdf)%(org-set-tags-to\"OFFICE\")\nAdded: %U %i\n  %?\n")
- org-capture-templates)
-
-(require 'org-attach)
-(defun orfu-process-current-pdf ()
-  (let* ((buffer (org-capture-get :buffer))
-         (buffer-mode (with-current-buffer buffer major-mode))
-         (filename (org-capture-get :original-file)))
-    (when (file-directory-p filename)
-      (with-current-buffer (org-capture-get :original-buffer)
-        (setq filename (dired-get-filename))))
-    (when (or (string= (file-name-extension filename) "pdf")
-              (string= (file-name-extension filename) "djvu"))
-      (let ((org-attach-directory (orfu-expand "data/"))
-            (name (file-name-sans-extension
-                   (file-name-nondirectory filename))))
-        (org-attach-attach filename nil 'cp)
-        (if (string-match "\\[\\(.*\\)\\] \\(.*\\)(\\(.*\\))" name)
-            (format "\"%s\" by %s"
-                    (match-string 2 name)
-                    (match-string 1 name))
-          name)))))
-;;** protocol
-(require 'org-protocol)
-(setq org-protocol-default-template-key "l")
-(push '("l" "Link" entry (function orfu-handle-link)
-        "* TODO %(orfu-wash-link)\nAdded: %T\n%(orfu-link-hooks)\n")
-      org-capture-templates)
+             "* TODO %?\nAdded: %T\n")
+        ("L" "Link" entry #'orfu-handle-link
+             "* TODO %(orfu-wash-link)\nAdded: %T\n%(orfu-link-hooks)\n")
+        ("p" "Link" entry #'orfu-handle-link
+             "* TODO %(orfu-wash-link)\nAdded: %T\n%i%(orfu-link-hooks)\n")))
 
 (defun orfu-wash-link ()
   "Return a pretty-printed top of `org-stored-links'.
