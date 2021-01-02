@@ -56,7 +56,9 @@ Try to remove superfluous information, like website title."
 (setq orca-handler-list
       (delete-dups
        (append
-        '((orfu-handle-link-youtube)
+        '((orca-handler-project)
+          (orca-handler-current-buffer "\\* Tasks")
+          (orfu-handle-link-youtube)
           (orfu-handle-link-github))
         orca-handler-list)))
 
@@ -89,12 +91,17 @@ Try to remove superfluous information, like website title."
         (re-search-forward (concat "^\\*+ +" project-name) nil t)))))
 
 (defun orfu-handle-link ()
-  (orca-handle-link))
+  (let ((link (orfu--youtube-link)))
+    (when link
+      (setq orfu-link-hook nil)
+      (add-hook 'orfu-link-hook (lambda () (orfu--handle-link-youtube-2 link))))
+    (orca-handle-link)))
 
 (defun orfu-shell (cmd output-buffer)
   "Run CMD in OUTPUT-BUFFER."
   (save-window-excursion
     (with-current-buffer (shell output-buffer)
+      (comint-clear-buffer)
       (insert cmd)
       (comint-send-input))))
 
@@ -148,14 +155,14 @@ Try to remove superfluous information, like website title."
 
 (defvar orfu-youtube-file-format "youtube-%(uploader)s-%(title)s.%(ext)s")
 
+(defun orfu-difference (set1 set2)
+  (cl-set-difference set1 set2 :test #'equal))
+
 (defun orfu--handle-link-youtube-1 (link &optional no-org)
   (setq link (replace-regexp-in-string "time_continue=[0-9]+&" "" link))
   (let* ((default-directory "~/Downloads/Videos")
-         (quality-switches "-f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio' --merge-output-format mp4")
-         (quality-switches "-f mp4")
          (cmd (format
-               "setsid -w youtube-dl %s --write-info-json -o %S %s"
-               quality-switches
+               "setsid -w youtube-dl -f mp4 --write-info-json -o %S %s"
                orfu-youtube-file-format link))
          (json (orfu--youtube-json cmd)))
     (if (not json)
@@ -200,6 +207,41 @@ Try to remove superfluous information, like website title."
                     (orfu--start-vlc fname fname))))))
         t))))
 
+(defun orfu--handle-link-youtube-2 (link)
+  (setq link (replace-regexp-in-string "time_continue=[0-9]+&" "" link))
+  (let ((dir "~/Downloads/Videos"))
+    (make-directory dir t)
+    (let* ((default-directory dir)
+           (cmd (format
+                 "setsid -w youtube-dl -f mp4 -o %S %s"
+                 orfu-youtube-file-format link))
+           (buf (orfu--youtube-output-buffer)))
+      (orfu-shell cmd buf)
+      (with-current-buffer buf
+        (while (not (string-match "\\[download\\] \\(?:Destination: \\)?\\(.+\\.mp4\\)\\(?: has already been downloaded\\)?" (buffer-string)))
+          (accept-process-output (get-buffer-process (current-buffer)) 0.5))
+        (let* ((fname (match-string-no-properties 1 (buffer-string)))
+               (channel (progn
+                          (string-match "youtube-\\(.*\\)-\\(.*\\)\\.mp4$" fname)
+                          (match-string 1 fname)))
+               (title (match-string 2 fname))
+               (fname-part (concat fname ".part"))
+               fname-alt)
+          (prog1 (org-make-link-string (expand-file-name fname dir) title)
+            (cond ((file-exists-p
+                    (setq fname-alt (replace-regexp-in-string "mp4$" "mkv" fname)))
+                   (orfu--start-vlc fname-alt fname-alt))
+                  ((file-exists-p
+                    (setq fname-alt (replace-regexp-in-string "mp4$" "webm" fname)))
+                   (orfu--start-vlc fname-alt fname-alt))
+                  (t
+                   (condition-case nil
+                       (orfu--start-vlc fname fname-part)
+                     (error
+                      (progn
+                        (orfu-shell (replace-regexp-in-string "-f mp4 " "" cmd) buf)
+                        (orfu--start-vlc fname fname))))))))))))
+
 (defcustom orfu-start-vlc-if-already-running t
   "When non-nil, start a new VLC."
   :type 'boolean)
@@ -227,9 +269,10 @@ Try to remove superfluous information, like website title."
     (when link
       (find-file (orfu-expand "wiki/youtube.org"))
       (goto-char (point-min))
-      (if (search-forward link nil t)
-          (user-error "Link already captured")
-        (orfu--handle-link-youtube-1 link)))))
+      (when (search-forward link nil t)
+        (message "Link already captured"))
+      (setq orfu-link-hook nil)
+      (orfu--handle-link-youtube-1 link))))
 
 ;;** agenda
 (defun orfu-tags-projects ()
@@ -313,9 +356,7 @@ With contents, for example:
          (< hour 17)
          (not (orfu-vacation-p)))
         (setq org-agenda-files
-              (cl-set-difference
-               org-agenda-files orfu-agenda-files-home
-               :test 'equal))
+              (orfu-difference org-agenda-files orfu-agenda-files-home))
       (setq org-agenda-files
             (cl-union
              org-agenda-files orfu-agenda-files-home
