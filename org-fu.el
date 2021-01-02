@@ -26,8 +26,6 @@
 
 ;;* capture
 ;;** basic
-(setq org-protocol-default-template-key "L")
-
 ;; http://orgmode.org/manual/Capture-templates.html#Capture-templates
 (setq org-capture-templates
       `(("t" "TODO" entry (file+headline ,(orfu-expand "gtd.org") "Tasks")
