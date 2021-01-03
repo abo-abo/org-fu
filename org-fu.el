@@ -158,6 +158,25 @@ Try to remove superfluous information, like website title."
 (defun orfu-difference (set1 set2)
   (cl-set-difference set1 set2 :test #'equal))
 
+(defun orfu--try-start-vlc (fname)
+  (let ((fname-part (concat fname ".part"))
+        fname-alt)
+    (cond ((file-exists-p
+            (setq fname-alt (replace-regexp-in-string "mp4$" "mkv" fname)))
+           (orfu--start-vlc fname-alt fname-alt))
+          ((file-exists-p
+            (setq fname-alt (replace-regexp-in-string "mp4$" "webm" fname)))
+           (orfu--start-vlc fname-alt fname-alt))
+          (t
+           (condition-case nil
+               (orfu--start-vlc fname fname-part)
+             (error
+              (progn
+                (orfu-shell
+                 (replace-regexp-in-string "-f mp4 " "" cmd)
+                 (orfu--youtube-output-buffer))
+                (orfu--start-vlc fname fname))))))))
+
 (defun orfu--handle-link-youtube-1 (link &optional no-org)
   (setq link (replace-regexp-in-string "time_continue=[0-9]+&" "" link))
   (let* ((default-directory "~/Downloads/Videos")
@@ -175,9 +194,7 @@ Try to remove superfluous information, like website title."
           t)
       (let* ((fname (cdr (assoc '_filename json)))
              (title (cdr (assoc 'title json)))
-             (fname-part (concat fname ".part"))
-             (channel (cdr (assoc 'uploader json)))
-             fname-alt)
+             (channel (cdr (assoc 'uploader json))))
         (unless no-org
           (add-hook 'orfu-link-hook
                     `(lambda ()
@@ -190,24 +207,11 @@ Try to remove superfluous information, like website title."
           (org-capture-put
            :immediate-finish t
            :jump-to-captured t))
-        (cond ((file-exists-p
-                (setq fname-alt (replace-regexp-in-string "mp4$" "mkv" fname)))
-               (orfu--start-vlc fname-alt fname-alt))
-              ((file-exists-p
-                (setq fname-alt (replace-regexp-in-string "mp4$" "webm" fname)))
-               (orfu--start-vlc fname-alt fname-alt))
-              (t
-               (condition-case nil
-                   (orfu--start-vlc fname fname-part)
-                 (error
-                  (progn
-                    (orfu-shell
-                     (replace-regexp-in-string "-f mp4 " "" cmd)
-                     (orfu--youtube-output-buffer))
-                    (orfu--start-vlc fname fname))))))
+        (orfu--try-start-vlc fname)
         t))))
 
 (defun orfu--handle-link-youtube-2 (link)
+  "Start youtube-dl on LINK, extracting the title from the process output."
   (setq link (replace-regexp-in-string "time_continue=[0-9]+&" "" link))
   (let ((dir "~/Downloads/Videos"))
     (make-directory dir t)
@@ -221,26 +225,11 @@ Try to remove superfluous information, like website title."
         (while (not (string-match "\\[download\\] \\(?:Destination: \\)?\\(.+\\.mp4\\)\\(?: has already been downloaded\\)?" (buffer-string)))
           (accept-process-output (get-buffer-process (current-buffer)) 0.5))
         (let* ((fname (match-string-no-properties 1 (buffer-string)))
-               (channel (progn
-                          (string-match "youtube-\\(.*\\)-\\(.*\\)\\.mp4$" fname)
-                          (match-string 1 fname)))
-               (title (match-string 2 fname))
-               (fname-part (concat fname ".part"))
-               fname-alt)
+               (title (progn
+                        (string-match "youtube-\\(.*\\)-\\(.*\\)\\.mp4$" fname)
+                        (match-string 2 fname))))
           (prog1 (org-make-link-string (expand-file-name fname dir) title)
-            (cond ((file-exists-p
-                    (setq fname-alt (replace-regexp-in-string "mp4$" "mkv" fname)))
-                   (orfu--start-vlc fname-alt fname-alt))
-                  ((file-exists-p
-                    (setq fname-alt (replace-regexp-in-string "mp4$" "webm" fname)))
-                   (orfu--start-vlc fname-alt fname-alt))
-                  (t
-                   (condition-case nil
-                       (orfu--start-vlc fname fname-part)
-                     (error
-                      (progn
-                        (orfu-shell (replace-regexp-in-string "-f mp4 " "" cmd) buf)
-                        (orfu--start-vlc fname fname))))))))))))
+            (orfu--try-start-vlc fname)))))))
 
 (defcustom orfu-start-vlc-if-already-running t
   "When non-nil, start a new VLC."
