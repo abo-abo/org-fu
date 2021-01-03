@@ -158,7 +158,7 @@ Try to remove superfluous information, like website title."
 (defun orfu-difference (set1 set2)
   (cl-set-difference set1 set2 :test #'equal))
 
-(defun orfu--try-start-vlc (fname)
+(defun orfu--try-start-vlc (fname cmd)
   (let ((fname-part (concat fname ".part"))
         fname-alt)
     (cond ((file-exists-p
@@ -207,7 +207,7 @@ Try to remove superfluous information, like website title."
           (org-capture-put
            :immediate-finish t
            :jump-to-captured t))
-        (orfu--try-start-vlc fname)
+        (orfu--try-start-vlc fname cmd)
         t))))
 
 (defun orfu--handle-link-youtube-2 (link)
@@ -229,7 +229,7 @@ Try to remove superfluous information, like website title."
                         (string-match "youtube-\\(.*\\)-\\(.*\\)\\.mp4$" fname)
                         (match-string 2 fname))))
           (prog1 (org-make-link-string (expand-file-name fname dir) title)
-            (orfu--try-start-vlc fname)))))))
+            (orfu--try-start-vlc fname cmd)))))))
 
 (defcustom orfu-start-vlc-if-already-running t
   "When non-nil, start a new VLC."
