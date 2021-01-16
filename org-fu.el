@@ -91,9 +91,9 @@ Try to remove superfluous information, like website title."
         (re-search-forward (concat "^\\*+ +" project-name) nil t)))))
 
 (defun orfu-handle-link ()
+  (setq orfu-link-hook nil)
   (let ((link (orfu--youtube-link)))
     (when link
-      (setq orfu-link-hook nil)
       (add-hook 'orfu-link-hook (lambda () (orfu--handle-link-youtube-2 link))))
     (orca-handle-link)))
 
