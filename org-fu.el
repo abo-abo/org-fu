@@ -317,39 +317,14 @@ Try to remove superfluous information, like website title."
   (interactive)
   (org-agenda nil "o"))
 
-(defvar orfu-agenda-files-home nil)
-
-(defun orfu-vacation-p ()
-  "Requires a file \"wiki/vacation.org\".
-With contents, for example:
-    * 2017
-    ** day off <2017-03-17 Fri>"
-  (let ((vacation-file (orfu-expand "wiki/vacation.org")))
-    (when (file-exists-p vacation-file)
-      (let ((today (format-time-string "%Y-%m-%d")))
-        (with-current-buffer (find-file-noselect
-                              vacation-file)
-          (save-excursion
-            (goto-char (point-min))
-            (re-search-forward (concat "<" today "[ a-zA-Z]*>") nil t)))))))
+(defvar orfu-agenda-files-function nil
+  "Function to produce a list of agenda files.")
 
 ;;;###autoload
 (defun orfu-agenda-day ()
   (interactive)
-  (let* ((ct (decode-time (current-time)))
-         (hour (nth 2 ct))
-         (dow (nth 6 ct)))
-    (if (and
-         (member dow '(1 2 3 4 5))
-         (>= hour 9)
-         (< hour 17)
-         (not (orfu-vacation-p)))
-        (setq org-agenda-files
-              (orfu-difference org-agenda-files orfu-agenda-files-home))
-      (setq org-agenda-files
-            (cl-union
-             org-agenda-files orfu-agenda-files-home
-             :test 'equal))))
+  (when orfu-agenda-files-function
+    (setq org-agenda-files (funcall orfu-agenda-files-function)))
   (org-agenda nil "d")
   (setq default-directory orfu-org-basedir))
 
