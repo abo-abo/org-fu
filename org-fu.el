@@ -222,14 +222,22 @@ Try to remove superfluous information, like website title."
            (buf (orfu--youtube-output-buffer)))
       (orfu-shell cmd buf)
       (with-current-buffer buf
-        (while (not (string-match "\\[download\\] \\(?:Destination: \\)?\\(.+\\.mp4\\)\\(?: has already been downloaded\\)?" (buffer-string)))
-          (accept-process-output (get-buffer-process (current-buffer)) 0.5))
-        (let* ((fname (match-string-no-properties 1 (buffer-string)))
-               (title (progn
-                        (string-match "youtube-\\(.*\\)-\\(.*\\)\\.mp4$" fname)
-                        (match-string 2 fname))))
-          (prog1 (org-make-link-string (expand-file-name fname dir) title)
-            (orfu--try-start-vlc fname cmd)))))))
+        (catch 'res
+          (while t
+            (cond ((string-match "\\[download\\] \\(?:Destination: \\)?\\(.+\\.mp4\\)\\(?: has already been downloaded\\)?" (buffer-string))
+                   (throw 'res
+                     (let* ((fname (match-string-no-properties 1 (buffer-string)))
+                            (title (progn
+                                     (string-match "youtube-\\(.*\\)-\\(.*\\)\\.mp4$" fname)
+                                     (match-string 2 fname))))
+                       (prog1 (org-make-link-string (expand-file-name fname dir) title)
+                         (orfu--try-start-vlc fname cmd)))))
+                  ((string-match "ERROR: .* File name too long" (buffer-string))
+                   (throw 'res
+                     (let ((orfu-youtube-file-format "youtube-%(uploader)s-%(id)s.%(ext)s"))
+                       (orfu--handle-link-youtube-2 link))))
+                  (t
+                   (accept-process-output (get-buffer-process (current-buffer)) 0.5)))))))))
 
 (defcustom orfu-start-vlc-if-already-running t
   "When non-nil, start a new VLC."
