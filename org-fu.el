@@ -239,6 +239,12 @@ Try to remove superfluous information, like website title."
                   (t
                    (accept-process-output (get-buffer-process (current-buffer)) 0.5)))))))))
 
+(defun orfu-play-link-at-point ()
+  "Download Youtube video at point and play it with VLC."
+  (interactive)
+  (orfu--handle-link-youtube-2
+   (org-element-property :raw-link (org-element-context))))
+
 (defcustom orfu-start-vlc-if-already-running t
   "When non-nil, start a new VLC."
   :type 'boolean)
