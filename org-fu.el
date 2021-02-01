@@ -27,9 +27,10 @@
 ;;* capture
 ;;** basic
 ;; http://orgmode.org/manual/Capture-templates.html#Capture-templates
+(setq org-agenda-todo-ignore-with-date t)
 (setq org-capture-templates
       `(("t" "TODO" entry (file+headline ,(orfu-expand "gtd.org") "Tasks")
-             "* TODO %?\nAdded: %T\n")
+             "* TODO %?\nAdded: %U\n")
         ("L" "Link" entry #'orfu-handle-link
              "* TODO %(orfu-wash-link)\nAdded: %T\n%(orfu-link-hooks)\n")
         ("p" "Link" entry #'orfu-handle-link
