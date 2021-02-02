@@ -283,8 +283,12 @@ Try to remove superfluous information, like website title."
   nil)
 
 (setq org-agenda-custom-commands
-      `(("n" "Agenda and all TODO's" ((agenda "")
-                                      (alltodo "")))
+      `(("n" "Agenda and all TODO's"
+             ((agenda "")
+              (todo "PROG")
+              (todo "NEXT")
+              (todo "TODO")
+              (todo "LIST")))
         ("h" "Office and Outside and Home"
              ((agenda)
               (tags-todo "OFFICE")
