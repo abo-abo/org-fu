@@ -41,9 +41,14 @@
 Try to remove superfluous information, like website title."
   (let ((link (caar org-stored-links))
         (title (cl-cadar org-stored-links)))
-    (org-make-link-string
-     link
-     (replace-regexp-in-string " - Stack Overflow" "" title))))
+    (cond ((string-match-p "https://stackoverflow.com" link)
+           (setq title (replace-regexp-in-string " - Stack Overflow" "" title)))
+          ((string-match "https://twitter.com/\\([^/]+\\)/" link)
+           (let ((user (concat "@" (match-string-no-properties 1 link))))
+             (when (string-match ".* on Twitter: \"\\(.*\\)\" / Twitter" title)
+               (setq title (concat user ": " (match-string 1 title))))
+             (setq title (replace-regexp-in-string " *https://t.co/[^ ]+" "" title)))))
+    (org-make-link-string link title)))
 
 (defvar orfu-link-hook nil)
 
