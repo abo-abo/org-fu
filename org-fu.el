@@ -291,6 +291,9 @@ Try to remove superfluous information, like website title."
       `(("n" "Agenda and all TODO's"
              ((agenda "")
               (todo "PROG")
+              (todo "TODO"
+                    ((org-agenda-files '("~/Dropbox/org/projects/2016-06-habit/habit.org"))
+                     (org-agenda-todo-ignore-with-date nil)))
               (todo "NEXT")
               (todo "TODO")
               (todo "LIST")))
