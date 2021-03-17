@@ -32,9 +32,9 @@
       `(("t" "TODO" entry (file+headline ,(orfu-expand "gtd.org") "Tasks")
              "* TODO %?\nAdded: %U\n")
         ("L" "Link" entry #'orfu-handle-link
-             "* TODO %(orfu-wash-link)\nAdded: %T\n%(orfu-link-hooks)\n")
+             "* TODO %(orfu-wash-link)\nAdded: %U\n%(orfu-link-hooks)\n")
         ("p" "Link" entry #'orfu-handle-link
-             "* TODO %(orfu-wash-link)\nAdded: %T\n%i%(orfu-link-hooks)\n")))
+             "* TODO %(orfu-wash-link)\nAdded: %U\n%i%(orfu-link-hooks)\n")))
 
 (defun orfu-wash-link ()
   "Return a pretty-printed top of `org-stored-links'.
