@@ -125,7 +125,7 @@ Try to remove superfluous information, like website title."
 
 (defun orfu--youtube-link ()
   (let ((link (caar org-stored-links)))
-    (when (and link (string-match "https://www.youtube.com/" link))
+    (when (and link (string-match-p "https://www.youtube.com/watch" link))
       (when (string-match "\\`\\(.*\\)&list=.*" link)
         (setq link (match-string 1 link)))
       (when (string-match "\\`\\(.*\\)&index=.*" link)
