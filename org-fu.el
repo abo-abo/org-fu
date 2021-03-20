@@ -290,11 +290,12 @@ Try to remove superfluous information, like website title."
              ((agenda "")
               (todo "PROG")
               (todo "TODO"
-                    ((org-agenda-files '("~/Dropbox/org/projects/2016-06-habit/habit.org"))
+                    ((org-agenda-files '("~/Dropbox/org/projects/habit/habit.org"))
                      (org-agenda-todo-ignore-with-date nil)))
               (todo "NEXT")
               (todo "TODO")
-              (todo "LIST")))
+              ;; (todo "LIST")
+              ))
         ("h" "Office and Outside and Home"
              ((agenda)
               (tags-todo "OFFICE")
