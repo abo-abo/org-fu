@@ -296,15 +296,6 @@ Try to remove superfluous information, like website title."
               (todo "TODO")
               ;; (todo "LIST")
               ))
-        ("h" "Office and Outside and Home"
-             ((agenda)
-              (tags-todo "OFFICE")
-              (tags-todo "OUTSIDE")
-              ,@(orfu-tags-projects)
-              (tags-todo "HOME")))
-        ("r" "Articles"
-             ((tags-todo "article")
-              (tags-todo "MASTERINGEMACS")))
         ("o" "Office and Outside"
              ((agenda)
               (tags-todo "OFFICE")
