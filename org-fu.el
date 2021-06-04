@@ -40,14 +40,24 @@
   "Return a pretty-printed top of `org-stored-links'.
 Try to remove superfluous information, like website title."
   (let ((link (caar org-stored-links))
-        (title (cl-cadar org-stored-links)))
+        (title (cl-cadar org-stored-links))
+        (leftover ""))
     (cond ((string-match-p "https://stackoverflow.com" link)
            (setq title (replace-regexp-in-string " - Stack Overflow" "" title)))
           ((string-match "https://twitter.com/\\([^/]+\\)/" link)
            (let ((user (concat "@" (match-string-no-properties 1 link))))
              (when (string-match ".* on Twitter: \"\\(.*\\)\" / Twitter" title)
-               (setq title (concat user ": " (match-string 1 title))))
-             (setq title (replace-regexp-in-string " *https://t.co/[^ ]+" "" title)))))
+               (setq title (match-string 1 title))
+               (setq title (replace-regexp-in-string " *https://t.co/[^ ]+" "" title))
+               (setq leftover
+                     (with-temp-buffer
+                       (insert title)
+                       (fill-region (point-min) (point-max))
+                       (buffer-string)))
+               (setq title (concat user ": " (ivy--truncate-string title 100)))
+               (add-hook 'orfu-link-hook (lambda () (concat "\n" leftover))))))
+          ((string-match "\\`https://www.youtube.com/" link)
+           (setq title (replace-regexp-in-string " - YouTube\\'" "" title))))
     (org-make-link-string link title)))
 
 (defvar orfu-link-hook nil)
