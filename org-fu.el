@@ -193,6 +193,12 @@ Try to remove superfluous information, like website title."
                  (orfu--youtube-output-buffer))
                 (orfu--start-vlc fname fname))))))))
 
+(defvar orfu-youtube-channel-function #'orfu-youtube-channel-wiki
+  "Return the capture file for a channel.")
+
+(defun orfu-youtube-channel-wiki (_channel)
+  (orfu-expand "wiki/youtube.org"))
+
 (defun orfu--handle-link-youtube-1 (link &optional no-org)
   (setq link (replace-regexp-in-string "time_continue=[0-9]+&" "" link))
   (let* ((default-directory "~/Downloads/Videos")
@@ -200,24 +206,25 @@ Try to remove superfluous information, like website title."
          (json (orfu--youtube-json cmd)))
     (if (not json)
         (progn
+          (find-file (orfu-expand "wiki/youtube.org"))
           (goto-char (point-min))
           (re-search-forward "^\\*+ +Videos$")
           (org-capture-put
            :immediate-finish t
            :jump-to-captured t)
           t)
-      (let* ((fname (cdr (assoc '_filename json)))
+      (let* ((fname (expand-file-name (cdr (assoc '_filename json))))
              (title (cdr (assoc 'title json)))
              (channel (cdr (assoc 'uploader json))))
         (unless no-org
           (add-hook 'orfu-link-hook
                     `(lambda ()
-                       ,(concat (org-make-link-string (expand-file-name fname) title)
+                       ,(concat (org-make-link-string fname title)
                                 (format "\nDuration: %d." (/ (cdr (assoc 'duration json)) 60)))))
+          (find-file (funcall orfu-youtube-channel-function channel))
           (goto-char (point-min))
-          (unless (re-search-forward (concat "^\\*+ +" channel) nil t)
-            (re-search-forward "^\\*+ +Misc$")
-            (insert "\n** " channel))
+          (unless (re-search-forward "^\\* Tasks" nil t)
+            (insert "* Tasks\n"))
           (org-capture-put
            :immediate-finish t
            :jump-to-captured t))
@@ -284,10 +291,6 @@ Try to remove superfluous information, like website title."
 (defun orfu-handle-link-youtube ()
   (let ((link (orfu--youtube-link)))
     (when link
-      (find-file (orfu-expand "wiki/youtube.org"))
-      (goto-char (point-min))
-      (when (search-forward link nil t)
-        (message "Link already captured"))
       (setq orfu-link-hook nil)
       (orfu--handle-link-youtube-1 link))))
 
