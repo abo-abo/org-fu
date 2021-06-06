@@ -206,7 +206,7 @@ Try to remove superfluous information, like website title."
          (json (orfu--youtube-json cmd)))
     (if (not json)
         (progn
-          (find-file (orfu-expand "wiki/youtube.org"))
+          (find-file (orfu-youtube-channel-wiki nil))
           (goto-char (point-min))
           (re-search-forward "^\\*+ +Videos$")
           (org-capture-put
