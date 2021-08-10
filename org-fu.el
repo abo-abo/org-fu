@@ -225,6 +225,7 @@ Try to remove superfluous information, like website title."
           (goto-char (point-min))
           (unless (re-search-forward "^\\* Tasks" nil t)
             (insert "* Tasks\n"))
+          (backward-char 1)
           (org-capture-put
            :immediate-finish t
            :jump-to-captured t))
