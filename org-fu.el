@@ -199,7 +199,7 @@ Try to remove superfluous information, like website title."
 (defun orfu-youtube-channel-wiki (_channel)
   (orfu-expand "wiki/youtube.org"))
 
-(defun orfu--handle-link-youtube-1 (link &optional no-org)
+(defun orfu--handle-link-youtube-1 (link)
   (setq link (replace-regexp-in-string "time_continue=[0-9]+&" "" link))
   (let* ((default-directory "~/Downloads/Videos")
          (cmd (format "setsid -w youtube-dl -f mp4 --write-info-json %s" link))
@@ -216,19 +216,18 @@ Try to remove superfluous information, like website title."
       (let* ((fname (expand-file-name (cdr (assoc '_filename json))))
              (title (cdr (assoc 'title json)))
              (channel (cdr (assoc 'uploader json))))
-        (unless no-org
-          (add-hook 'orfu-link-hook
-                    `(lambda ()
-                       ,(concat (org-make-link-string fname title)
-                                (format "\nDuration: %d." (/ (cdr (assoc 'duration json)) 60)))))
-          (find-file (funcall orfu-youtube-channel-function channel))
-          (goto-char (point-min))
-          (unless (re-search-forward "^\\* Tasks" nil t)
-            (insert "* Tasks\n"))
-          (backward-char 1)
-          (org-capture-put
-           :immediate-finish t
-           :jump-to-captured t))
+        (add-hook 'orfu-link-hook
+                  `(lambda ()
+                     ,(concat (org-make-link-string fname title)
+                              (format "\nDuration: %d." (/ (cdr (assoc 'duration json)) 60)))))
+        (find-file (funcall orfu-youtube-channel-function channel))
+        (goto-char (point-min))
+        (unless (re-search-forward "^\\* Tasks" nil t)
+          (insert "* Tasks\n"))
+        (backward-char 1)
+        (org-capture-put
+         :immediate-finish t
+         :jump-to-captured t)
         (orfu--try-start-vlc fname cmd)
         t))))
 
