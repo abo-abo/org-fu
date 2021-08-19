@@ -57,7 +57,9 @@ Try to remove superfluous information, like website title."
                (setq title (concat user ": " (ivy--truncate-string title 100)))
                (add-hook 'orfu-link-hook (lambda () (concat "\n" leftover))))))
           ((string-match "\\`https://www.youtube.com/" link)
-           (setq title (replace-regexp-in-string " - YouTube\\'" "" title))))
+           (setq title (replace-regexp-in-string " - YouTube\\'" "" title)))
+          ((string-match "\\`https://www.podbean.com/site/EpisodeDownload/" link)
+           (setq title (replace-regexp-in-string "Download - \\([^|]+*\\) | Podbean" "\\1" title))))
     (org-make-link-string link title)))
 
 (defvar orfu-link-hook nil)
