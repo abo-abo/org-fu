@@ -267,6 +267,8 @@ Try to remove superfluous information, like website title."
   "When non-nil, start a new VLC."
   :type 'boolean)
 
+(defvar orfu-video-player "mpv")
+
 (defun orfu--start-vlc (fname fname-part)
   (orfu-wait
    (or (file-exists-p fname) (file-exists-p fname-part)))
@@ -278,9 +280,9 @@ Try to remove superfluous information, like website title."
                       fname-part))
                (* 3 1024 1024)))))
   (when (or orfu-start-vlc-if-already-running
-            (string= "" (shell-command-to-string "pidof vlc")))
+            (string= "" (shell-command-to-string (concat "pidof " orfu-video-player))))
     (orly-start
-     "vlc"
+     orfu-video-player
      (if (file-exists-p fname-part)
          fname-part
        fname))))
