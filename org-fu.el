@@ -209,7 +209,10 @@ Try to remove superfluous information, like website title."
          (channel (cdr (assoc 'uploader json))))
     (when json
       (let ((fname (expand-file-name (cdr (assoc '_filename json))))
-            (title (cdr (assoc 'title json))))
+            (title (cdr (assoc 'title json)))
+            (desc (cdr (assoc 'description json))))
+        (when desc
+          (kill-new desc))
         (add-hook 'orfu-link-hook
                   `(lambda ()
                      ,(concat (org-make-link-string fname title)
