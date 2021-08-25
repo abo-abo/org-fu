@@ -67,21 +67,6 @@
           (orfu-handle-link-github))
         orca-handler-list)))
 
-(defun orfu-handle-link-scholar ()
-  (let ((link (caar org-stored-links)))
-    (when (string-match "^https://scholar.google.com/scholar.bib" link)
-      (url-retrieve
-       link
-       (lambda (status)
-         (let ((err (plist-get status :error)))
-           (if err (error
-                    "\"%s\" %s" link
-                    (downcase (nth 2 (assq (nth 2 err) url-http-codes)))))
-           (message (buffer-substring-no-properties
-                     (point-min)
-                     (point-max)))))
-       nil nil t))))
-
 (defun orfu-handle-link-github ()
   (let ((link (caar org-stored-links))
         (title (cl-cadar org-stored-links)))
