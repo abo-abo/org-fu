@@ -28,55 +28,42 @@
 ;;** basic
 ;; http://orgmode.org/manual/Capture-templates.html#Capture-templates
 (setq org-agenda-todo-ignore-with-date t)
-(setq org-capture-templates
-      `(("t" "TODO" entry (file+headline ,(orfu-expand "gtd.org") "Tasks")
-             "* TODO %?\nAdded: %U\n")
-        ("L" "Link" entry #'orfu-handle-link
-             "* TODO %(orfu-wash-link)\nAdded: %U\n%(orfu-link-hooks)\n")
-        ("p" "Link" entry #'orfu-handle-link
-             "* TODO %(orfu-wash-link)\nAdded: %U\n%i%(orfu-link-hooks)\n")))
+(unless (assoc "t" org-capture-templates)
+  (add-to-list 'org-capture-templates
+               `("t" "TODO" entry (file+headline ,(orfu-expand "gtd.org") "Tasks")
+                     "* TODO %?\nAdded: %U\n")))
 
-(defun orfu-wash-link ()
-  "Return a pretty-printed top of `org-stored-links'.
-Try to remove superfluous information, like website title."
-  (let ((link (caar org-stored-links))
-        (title (cl-cadar org-stored-links))
-        (leftover ""))
-    (cond ((string-match-p "https://stackoverflow.com" link)
-           (setq title (replace-regexp-in-string " - Stack Overflow" "" title)))
-          ((string-match "https://twitter.com/\\([^/]+\\)/" link)
-           (let ((user (concat "@" (match-string-no-properties 1 link))))
-             (when (string-match ".* on Twitter: \"\\(.*\\)\" / Twitter" title)
-               (setq title (match-string 1 title))
-               (setq title (replace-regexp-in-string " *https://t.co/[^ ]+" "" title))
-               (setq leftover
-                     (with-temp-buffer
-                       (insert title)
-                       (fill-region (point-min) (point-max))
-                       (buffer-string)))
-               (setq title (concat user ": " (ivy--truncate-string title 100)))
-               (add-hook 'orfu-link-hook (lambda () (concat "\n" leftover))))))
-          ((string-match "\\`https://www.youtube.com/" link)
-           (setq title (replace-regexp-in-string " - YouTube\\'" "" title)))
-          ((string-match "\\`https://www.podbean.com/site/EpisodeDownload/" link)
-           (setq title (replace-regexp-in-string "Download - \\([^|]+*\\) | Podbean" "\\1" title))))
-    (org-make-link-string link title)))
+(orca-wash-configure
+ "https://www.podbean.com" (orca-wash-rep "Download - \\([^|]+*\\) | Podbean" "\\1"))
+(orca-wash-configure
+ "https://www.youtube.com" (orca-wash-rep " - YouTube" ""))
+(orca-wash-configure
+ "https://twitter.com" #'orfu-wash-link-twitter)
 
-(defvar orfu-link-hook nil)
-
-(defun orfu-link-hooks ()
-  (prog1
-      (mapconcat #'funcall
-                 orfu-link-hook
-                 "\n")
-    (setq orfu-link-hook nil)))
+(defun orfu-wash-link-twitter (title)
+  (let ((leftover "")
+        (user (concat "@"
+                      (let ((link (caar org-stored-links)))
+                        (string-match "https://twitter.com/\\([^/]+\\)/" link)
+                        (match-string-no-properties 1 link)))))
+    (when (string-match ".* on Twitter: \"\\(.*\\)\" / Twitter" title)
+      (setq title (match-string 1 title))
+      (setq title (replace-regexp-in-string " *https://t.co/[^ ]+" "" title))
+      (setq leftover
+            (with-temp-buffer
+              (insert title)
+              (fill-region (point-min) (point-max))
+              (buffer-string)))
+      (setq title (concat user ": " (ivy--truncate-string title 100)))
+      (add-hook 'orca-link-hook (lambda () (concat "\n" leftover))))
+    title))
 
 (setq orca-handler-list
       (delete-dups
        (append
         '((orca-handler-project)
-          (orca-handler-current-buffer "\\* Tasks")
           (orfu-handle-link-youtube)
+          (orca-handler-current-buffer "\\* Tasks")
           (orfu-handle-link-github))
         orca-handler-list)))
 
@@ -108,12 +95,12 @@ Try to remove superfluous information, like website title."
         (goto-char (point-min))
         (re-search-forward (concat "^\\*+ +" project-name) nil t)))))
 
-(defun orfu-handle-link ()
-  (setq orfu-link-hook nil)
-  (let ((link (orfu--youtube-link)))
-    (when link
-      (add-hook 'orfu-link-hook (lambda () (orfu--handle-link-youtube-2 link))))
-    (orca-handle-link)))
+;; (defun orfu-handle-link ()
+;;   (setq orca-link-hook nil)
+;;   (let ((link (orfu--youtube-link)))
+;;     (when link
+;;       (add-hook 'orca-link-hook (lambda () (orfu--handle-link-youtube-2 link))))
+;;     (orca-handle-link)))
 
 (defun orfu-shell (cmd output-buffer)
   "Run CMD in OUTPUT-BUFFER."
@@ -213,7 +200,7 @@ Try to remove superfluous information, like website title."
             (desc (cdr (assoc 'description json))))
         (when desc
           (kill-new desc))
-        (add-hook 'orfu-link-hook
+        (add-hook 'orca-link-hook
                   `(lambda ()
                      ,(concat (org-make-link-string fname title)
                               (format "\nDuration: %d." (/ (cdr (assoc 'duration json)) 60)))))
@@ -290,7 +277,7 @@ Try to remove superfluous information, like website title."
 (defun orfu-handle-link-youtube ()
   (let ((link (orfu--youtube-link)))
     (when link
-      (setq orfu-link-hook nil)
+      (setq orca-link-hook nil)
       (orfu--handle-link-youtube-1 link))))
 
 ;;** agenda
