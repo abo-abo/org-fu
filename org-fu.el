@@ -37,26 +37,6 @@
  "https://www.podbean.com" (orca-wash-rep "Download - \\([^|]+*\\) | Podbean" "\\1"))
 (orca-wash-configure
  "https://www.youtube.com" (orca-wash-rep " - YouTube" ""))
-(orca-wash-configure
- "https://twitter.com" #'orfu-wash-link-twitter)
-
-(defun orfu-wash-link-twitter (title)
-  (let ((leftover "")
-        (user (concat "@"
-                      (let ((link (caar org-stored-links)))
-                        (string-match "https://twitter.com/\\([^/]+\\)/" link)
-                        (match-string-no-properties 1 link)))))
-    (when (string-match ".* on Twitter: \"\\(.*\\)\" / Twitter" title)
-      (setq title (match-string 1 title))
-      (setq title (replace-regexp-in-string " *https://t.co/[^ ]+" "" title))
-      (setq leftover
-            (with-temp-buffer
-              (insert title)
-              (fill-region (point-min) (point-max))
-              (buffer-string)))
-      (setq title (concat user ": " (ivy--truncate-string title 100)))
-      (add-hook 'orca-link-hook (lambda () (concat "\n" leftover))))
-    title))
 
 (setq orca-handler-list
       (delete-dups
@@ -167,33 +147,27 @@
                  (orfu--youtube-output-buffer))
                 (orfu--start-vlc fname fname))))))))
 
-(defvar orfu-youtube-channel-function #'orfu-youtube-channel-wiki
-  "Return the capture file for a channel.")
+(defvar orfu-youtube-json-function nil
+  "Do some actions on json of the channel.
+Return the capture file.")
 
-(defun orfu-youtube-channel-wiki (_channel)
-  (orfu-expand "wiki/youtube.org"))
+(defvar orfu--current-cmd nil)
 
 (defun orfu--handle-link-youtube-1 (link)
   (setq link (replace-regexp-in-string "time_continue=[0-9]+&" "" link))
   (let* ((default-directory "~/Downloads/Videos")
-         (cmd (format "setsid -w youtube-dl -f mp4 --write-info-json %s" link))
-         (json (orfu--youtube-json cmd))
-         (channel (cdr (assoc 'uploader json))))
-    (when json
-      (let ((fname (expand-file-name (cdr (assoc '_filename json))))
-            (title (cdr (assoc 'title json)))
-            (desc (cdr (assoc 'description json))))
-        (when desc
-          (kill-new desc))
-        (add-hook 'orca-link-hook
-                  `(lambda ()
-                     ,(concat (org-make-link-string fname title)
-                              (format "\nDuration: %d." (/ (cdr (assoc 'duration json)) 60)))))
-        (orfu--try-start-vlc fname cmd)))
-    (find-file (funcall orfu-youtube-channel-function channel))
+         (json (orfu--youtube-json
+                (setq orfu--current-cmd
+                      (format "setsid -w youtube-dl --write-sub -f mp4 --write-info-json %s" link)))))
+    (find-file (if orfu-youtube-json-function
+                   (funcall orfu-youtube-json-function json)
+                 (orfu-expand "wiki/youtube.org")))
     (goto-char (point-min))
-    (unless (re-search-forward "^\\* Tasks" nil t)
-      (insert "* Tasks\n")
+    (unless (re-search-forward "^\\* Blogs" nil t)
+      (goto-char (point-max))
+      (unless (eolp)
+        (newline))
+      (insert "* Blogs\n")
       (backward-char 1))
     (org-capture-put
      :immediate-finish t
