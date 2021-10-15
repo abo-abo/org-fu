@@ -60,13 +60,6 @@
         (goto-char (point-min))
         (re-search-forward (concat "^\\*+ +" project-name) nil t)))))
 
-;; (defun orfu-handle-link ()
-;;   (setq orca-link-hook nil)
-;;   (let ((link (orfu--youtube-link)))
-;;     (when link
-;;       (add-hook 'orca-link-hook (lambda () (orfu--handle-link-youtube-2 link))))
-;;     (orca-handle-link)))
-
 (defun orfu-shell (cmd output-buffer)
   "Run CMD in OUTPUT-BUFFER."
   (save-window-excursion
