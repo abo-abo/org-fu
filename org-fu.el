@@ -155,13 +155,7 @@ Return the capture file.")
     (find-file (if orfu-youtube-json-function
                    (funcall orfu-youtube-json-function json)
                  (orfu-expand "wiki/youtube.org")))
-    (goto-char (point-min))
-    (unless (re-search-forward "^\\* Blogs" nil t)
-      (goto-char (point-max))
-      (unless (eolp)
-        (newline))
-      (insert "* Blogs\n")
-      (backward-char 1))
+    (zo-goto-headings '("Blogs"))
     (org-capture-put
      :immediate-finish t
      :jump-to-captured t))
