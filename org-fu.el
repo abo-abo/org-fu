@@ -1,23 +1,12 @@
 ;;; org-fu.el --- Org-mode tricks. -*- lexical-binding: t -*-
 ;; Expected files:
-;; * gtd.org with level 1: Tasks, Projects
-;;
-;;   Projects with level 2: elisp, function-args, tiny.el, el-TeX,
-;;   Worf, Scientific Articles
-;;
-;; * ent.org with level 1: Articles, Videos
-;; * wiki/stack.org with level 1: Questions
+;; - gtd.org with level 1: Tasks
 
-;;* base directory
 (require 'orca)
-(require 'json)
-(require 'org-protocol)
 (require 'org-capture)
 
-(defvar orfu-org-basedir "~/Dropbox/org")
-
 (defun orfu-expand (name)
-  (expand-file-name name orfu-org-basedir))
+  (expand-file-name name org-directory))
 
 (defcustom orfu-github-project-name
   "https://github\\.com/abo-abo/\\([^/]+\\)"
@@ -31,12 +20,7 @@
 (unless (assoc "t" org-capture-templates)
   (add-to-list 'org-capture-templates
                `("t" "TODO" entry (file+headline ,(orfu-expand "gtd.org") "Tasks")
-                     "* TODO %?\nAdded: %U\n")))
-
-(orca-wash-configure
- "https://www.podbean.com" (orca-wash-rep "Download - \\([^|]+*\\) | Podbean" "\\1"))
-(orca-wash-configure
- "https://www.youtube.com" (orca-wash-rep " - YouTube" ""))
+                 "* TODO %?\nAdded: %U\n")))
 
 (setq orca-handler-list
       (delete-dups
@@ -60,17 +44,6 @@
         (goto-char (point-min))
         (re-search-forward (concat "^\\*+ +" project-name) nil t)))))
 
-(defun orfu-shell (cmd output-buffer)
-  "Run CMD in OUTPUT-BUFFER."
-  (save-window-excursion
-    (with-current-buffer (shell output-buffer)
-      (comint-clear-buffer)
-      (insert cmd)
-      (comint-send-input))))
-
-(defun orfu-difference (set1 set2)
-  (cl-set-difference set1 set2 :test #'equal))
-
 (defun orfu--youtube-link ()
   (let ((link (caar org-stored-links)))
     (when (and link (string-match-p "https://www.youtube.com/watch" link))
@@ -88,57 +61,14 @@
       )))
 
 ;;** agenda
-(defun orfu-tags-projects ()
-  nil)
-
 (setq org-agenda-custom-commands
       `(("n" "Agenda and all TODO's"
-             ((agenda "")
-              (todo "PROG")
-              (todo "TODO"
-                    ((org-agenda-files '("~/Dropbox/org/projects/habit/habit.org"))
-                     (org-agenda-todo-ignore-with-date nil)))
-              (todo "NEXT")
-              (todo "TODO")
-              ;; (todo "LIST")
-              ))
-        ("o" "Office and Outside"
-             ((agenda)
-              (tags-todo "OFFICE")
-              (tags-todo "OUTSIDE")
-              ,@(orfu-tags-projects)))
-        ("d" "Daily Action List"
-             ((agenda ""
-                      ((org-agenda-ndays 1)
-                       (org-agenda-sorting-strategy
-                        '((agenda time-up priority-down tag-up)))
-                       (org-deadline-warning-days 0)))))
-        ("P" "Project List"
-             ((tags "PROJECT")))
-        ("w" "Weekly"
-             ((agenda ""
-                      ((org-agenda-span 'week)
-                       (org-agenda-skip-function 'orfu-skip-daily-tasks)
-                       (org-deadline-warning-days 0)))))))
-
-(defun orfu-skip-daily-tasks ()
-  (let ((next-headline (save-excursion (or (outline-next-heading) (point-max))))
-        (headline (or (and (org-at-heading-p) (point))
-                      (save-excursion (org-back-to-heading))))
-        (rep-str (org-get-repeat)))
-    (if (and rep-str (string-match "\\+[0-9]+d" rep-str))
-        next-headline
-      nil)))
-
-;;;###autoload
-(defun orfu-agenda-quick ()
-  (interactive)
-  (org-agenda nil "h"))
-
-;;;###autoload
-(defun orfu-agenda-office ()
-  (interactive)
-  (org-agenda nil "o"))
+         ((agenda "")
+          (todo "PROG")
+          (todo "NEXT")
+          (todo "TODO")
+          ;; (todo "LIST")
+          ))))
 
 (defvar orfu-agenda-files-function nil
   "Function to produce a list of agenda files.")
@@ -149,11 +79,6 @@
   (when orfu-agenda-files-function
     (setq org-agenda-files (funcall orfu-agenda-files-function)))
   (org-agenda nil "n"))
-
-;;;###autoload
-(defun orfu-agenda-articles ()
-  (interactive)
-  (org-agenda nil "r"))
 
 (provide 'org-fu)
 
