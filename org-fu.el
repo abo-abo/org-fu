@@ -148,16 +148,7 @@
   (interactive)
   (when orfu-agenda-files-function
     (setq org-agenda-files (funcall orfu-agenda-files-function)))
-  (let* ((default-directory orfu-org-basedir)
-         (extra-agenda-files
-          (mapcar #'expand-file-name
-                  (counsel--split-string
-                   (counsel--call
-                    '("rg" "-g*.org" "-l" "PROG|NEXT"))))))
-    (setq org-agenda-files
-          (delete-dups
-           (append (mapcar #'expand-file-name org-agenda-files) extra-agenda-files)))
-    (org-agenda nil "n")))
+  (org-agenda nil "n"))
 
 ;;;###autoload
 (defun orfu-agenda-articles ()
