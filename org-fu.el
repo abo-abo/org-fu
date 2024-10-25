@@ -8,11 +8,6 @@
 (defun orfu-expand (name)
   (expand-file-name name org-directory))
 
-(defcustom orfu-github-project-name
-  "https://github\\.com/abo-abo/\\([^/]+\\)"
-  "Regex for Github repository projects."
-  :type 'string)
-
 ;;* capture
 ;;** basic
 ;; http://orgmode.org/manual/Capture-templates.html#Capture-templates
@@ -27,22 +22,8 @@
        (append
         '((orca-handler-project)
           (orfu-handle-link-youtube)
-          (orca-handler-current-buffer "\\* Tasks")
-          (orfu-handle-link-github))
+          (orca-handler-current-buffer "\\* Tasks"))
         orca-handler-list)))
-
-(defun orfu-handle-link-github ()
-  (let ((link (caar org-stored-links))
-        (title (cl-cadar org-stored-links)))
-    (when (string-match orfu-github-project-name link)
-      (let ((project-name (match-string 1 link))
-            (parts (split-string title "·")))
-        (setf (cl-cadar org-stored-links)
-              (concat (car parts)
-                      (substring (cadr parts) 7)))
-        (find-file (orfu-expand "wiki/github.org"))
-        (goto-char (point-min))
-        (re-search-forward (concat "^\\*+ +" project-name) nil t)))))
 
 (defun orfu--youtube-link ()
   (let ((link (caar org-stored-links)))
